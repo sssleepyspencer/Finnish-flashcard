@@ -670,8 +670,35 @@ function esc(s) {
 }
 
 /* ═══════════════════════════════════════════
-   DICTIONARY LOOKUP
+   DICTIONARY LOOKUP  (Wiktionary + Gemini)
 ═══════════════════════════════════════════ */
+
+// Fetch Finnish word data from Wiktionary API
+async function fetchWiktionary(word) {
+  try {
+    // Use Wiktionary REST API - get page content for the word
+    const url = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const json = await r.json();
+
+    // Look for Finnish definitions
+    const fiDefs = json.fi || [];
+    if (!fiDefs.length) return null;
+
+    const results = [];
+    for (const entry of fiDefs.slice(0, 4)) {
+      const pos = entry.partOfSpeech || '';
+      const defs = (entry.definitions || []).slice(0, 3).map(d => ({
+        def: d.definition ? d.definition.replace(/<[^>]+>/g, '') : '',
+        ex: (d.examples || []).slice(0, 1).map(e => e.replace ? e.replace(/<[^>]+>/g,'') : '').join('')
+      })).filter(d => d.def);
+      if (defs.length) results.push({ pos, defs });
+    }
+    return results.length ? results : null;
+  } catch(_) { return null; }
+}
+
 async function lookupWord() {
   const query = document.getElementById('dict-input').value.trim();
   if (!query) return;
@@ -685,86 +712,68 @@ async function lookupWord() {
   resultEl.style.display = 'block';
   resultEl.innerHTML = `<div style="padding:32px;text-align:center;color:var(--ink3);font-style:italic;">Looking up <strong style="color:var(--accent)">${esc(query)}</strong>…</div>`;
 
-  // Try Free Dictionary API
-  let dictData = null;
-  try {
-    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(query)}`);
-    if (r.ok) {
-      const json = await r.json();
-      if (Array.isArray(json) && json.length) dictData = json[0];
+  // Fetch from Wiktionary (Finnish entries)
+  const wiktData = await fetchWiktionary(query);
+  const alreadyAdded = words.some(w => w.fi === query);
+
+  // Build definitions HTML from Wiktionary
+  let defsHtml = '';
+  if (wiktData && wiktData.length) {
+    defsHtml = `<div class="dict-section">
+      <div class="dict-section-label">Wiktionary</div>
+      <div class="dict-meanings">`;
+    let num = 1;
+    for (const entry of wiktData) {
+      if (entry.pos) {
+        defsHtml += `<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--ink3);margin:8px 0 4px;letter-spacing:1px;text-transform:uppercase;">${esc(entry.pos)}</div>`;
+      }
+      for (const d of entry.defs) {
+        defsHtml += `<div class="dict-meaning-item">
+          <div class="dict-meaning-num">${num++}.</div>
+          <div>
+            <div class="dict-meaning-text">${esc(d.def)}</div>
+            ${d.ex ? `<div class="dict-example">"${esc(d.ex)}"</div>` : ''}
+          </div>
+        </div>`;
+      }
     }
-  } catch(_) {}
-
-  // Determine if Finnish or English query (heuristic: Finnish chars or not in dict)
-  const likelyFinnish = /[äöåÄÖÅ]/.test(query) || !dictData;
-
-  if (!dictData && likelyFinnish) {
-    noticeEl.style.display = 'block';
+    defsHtml += `</div></div>`;
   }
-
-  // Build basic header from dict data or raw query
-  const headword = dictData?.word || query;
-  const phonetic = dictData?.phonetic || '';
-  const partOfSpeech = dictData?.meanings?.[0]?.partOfSpeech || '';
-  const definitions = (dictData?.meanings || []).flatMap(m =>
-    m.definitions.slice(0,2).map(d => ({ pos: m.partOfSpeech, def: d.definition, ex: d.example||'' }))
-  ).slice(0, 5);
-
-  const alreadyAdded = words.some(w => w.fi === headword);
 
   resultEl.innerHTML = `
     <div class="dict-result">
       <div class="dict-word-header">
         <div>
-          <div class="dict-word-title">${esc(headword)}</div>
-          <div>
-            ${partOfSpeech ? `<span class="dict-word-pos">${esc(partOfSpeech)}</span>` : ''}
-            ${phonetic ? `<span class="dict-word-phonetic">${esc(phonetic)}</span>` : ''}
-          </div>
+          <div class="dict-word-title">${esc(query)}</div>
+          ${wiktData ? `<div style="font-size:12px;color:var(--ink3);margin-top:4px;font-family:'DM Mono',monospace;">via Wiktionary</div>` : ''}
         </div>
         <div class="dict-header-actions">
-          <button class="speak-btn-lg" onclick="speakLookup('${esc(headword.replace(/'/g,"\\'"))}')" id="lookup-speak-btn">
+          <button class="speak-btn-lg" onclick="speakLookup('${esc(query.replace(/'/g,"\\'"))}')" id="lookup-speak-btn">
             <span id="lookup-wave" class="wave-bars waveform"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
             🔊 Listen
           </button>
           <button class="add-btn ${alreadyAdded?'added':''}" id="add-word-btn"
-            onclick="handleAddWord('${esc(headword.replace(/'/g,"\\'"))}')">
+            onclick="handleAddWord('${esc(query.replace(/'/g,"\\'"))}')">
             ${alreadyAdded ? '✓ In word list' : '+ Add to word list'}
           </button>
         </div>
       </div>
 
-      ${definitions.length ? `
-      <div class="dict-section">
-        <div class="dict-section-label">Definitions</div>
-        <div class="dict-meanings">
-          ${definitions.map((d,i) => `
-            <div class="dict-meaning-item">
-              <div class="dict-meaning-num">${i+1}.</div>
-              <div>
-                <div class="dict-meaning-text">${esc(d.def)}</div>
-                ${d.ex ? `<div class="dict-example">"${esc(d.ex)}"</div>` : ''}
-              </div>
-            </div>`).join('')}
-        </div>
-      </div>` : ''}
+      ${defsHtml}
 
       <div class="ai-section">
         <div class="ai-label-row">
           <span class="ai-badge">AI</span>
-          <span class="ai-section-label">Claude's explanation</span>
+          <span class="ai-section-label">Gemini's explanation</span>
         </div>
         <div class="ai-content" id="ai-content">
-          <div class="ai-loading"><div class="ai-spinner"></div> Asking Claude…</div>
+          <div class="ai-loading"><div class="ai-spinner"></div> Asking Gemini…</div>
         </div>
       </div>
     </div>`;
 
-  // Auto-play pronunciation
-  speakLookup(headword);
-
-  // Fetch AI explanation
-  await fetchAIExplanation(query, headword, likelyFinnish);
+  speakLookup(query);
+  await fetchAIExplanation(query, wiktData);
 }
 
 let currentAddWord = { fi: '', en: '' };
@@ -772,15 +781,9 @@ let currentAddWord = { fi: '', en: '' };
 function handleAddWord(fi) {
   const btn = document.getElementById('add-word-btn');
   if (btn.classList.contains('added')) return;
-
-  // Show override input to let user edit the English meaning
-  const aiContent = document.getElementById('ai-content');
   const existingOverride = document.getElementById('add-override-row');
-  if (existingOverride) { existingOverride.remove(); }
-
-  // Try to extract a short English meaning from AI content
+  if (existingOverride) existingOverride.remove();
   const guessedEn = currentAddWord.en || '';
-
   const row = document.createElement('div');
   row.id = 'add-override-row';
   row.className = 'add-override';
@@ -788,7 +791,6 @@ function handleAddWord(fi) {
     <input id="override-en" type="text" placeholder="English meaning…" value="${esc(guessedEn)}" />
     <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="confirmAdd('${esc(fi.replace(/'/g,"\\'"))}')">Add</button>
   `;
-
   btn.closest('.dict-result').querySelector('.dict-word-header').after(row);
   document.getElementById('override-en').focus();
 }
@@ -806,31 +808,31 @@ function confirmAdd(fi) {
   }
 }
 
-async function fetchAIExplanation(query, headword, likelyFinnish) {
+async function fetchAIExplanation(query, wiktData) {
   const aiEl = document.getElementById('ai-content');
-  const langHint = likelyFinnish
-    ? `The word "${query}" appears to be Finnish.`
-    : `The word "${query}" may be English or Finnish.`;
 
-  const prompt = `${langHint}
+  // Pass Wiktionary context to AI if available
+  const wiktContext = wiktData
+    ? `Wiktionary gives these definitions:\n` + wiktData.flatMap(e =>
+        e.defs.map(d => `- (${e.pos}) ${d.def}`)
+      ).join('\n')
+    : 'No Wiktionary entry found.';
+
+  const prompt = `You are a Finnish language tutor. The learner looked up the Finnish word "${query}".
+
+${wiktContext}
 
 Please give a concise learner-focused explanation with these sections:
-1. **Meaning** – 1–2 sentence English meaning/translation
-2. **Finnish examples** – 2–3 short example sentences in Finnish with English translation in parentheses
-3. **Word tips** – any useful notes (word class, common inflections, compound roots, usage tips, or register)
-
-Keep it brief and practical. Use plain text, no markdown headers.
-Format each section clearly labeled like:
-Meaning: ...
+Meaning: 1-2 sentence English meaning/translation
+Card: a short 2-5 word English definition suitable for a flashcard
 Examples:
-- sentence (translation)
-Word tips: ...
+- Finnish sentence (English translation)
+- Finnish sentence (English translation)
+Word tips: useful notes about word class, common inflections, compound roots, or usage
 
-For the meaning line, also include a short English equivalent (2–5 words) that could serve as a vocabulary card definition, prefixed with "Card: " on a new line.`;
+Keep it brief and practical. Plain text only, no markdown.`;
 
   try {
-    aiEl.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div> Asking Gemini…</div>';
-
     const response = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -847,7 +849,6 @@ For the meaning line, also include a short English equivalent (2–5 words) that
 
     const data = await response.json();
     const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
     if (!fullText) throw new Error('Empty response');
 
     const cardMatch = fullText.match(/Card:\s*(.+)/i);
@@ -857,7 +858,9 @@ For the meaning line, also include a short English equivalent (2–5 words) that
 
   } catch(err) {
     aiEl.innerHTML = `<span style="color:var(--ink3);font-style:italic;">AI explanation unavailable. (${err.message})</span>`;
-  }}
+  }
+}
+
 
 function renderAIText(text, el) {
   // Simple formatting: bold section labels, bullet points
