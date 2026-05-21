@@ -828,57 +828,39 @@ Word tips: ...
 
 For the meaning line, also include a short English equivalent (2–5 words) that could serve as a vocabulary card definition, prefixed with "Card: " on a new line.`;
 
+  const GEMINI_KEY = 'AIzaSyAi_vxZRQbWlgDhG6JDVF_X9w6SCjKU4nk';
+  const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+
   try {
-    const response = await fetch('/api/claude', {
+    aiEl.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div> Asking Gemini…</div>';
+
+    const response = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        stream: true,
-        messages: [{ role: 'user', content: prompt }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 600, temperature: 0.4 }
       })
     });
 
-    if (!response.ok) throw new Error('API error');
-
-    aiEl.innerHTML = '<div class="ai-stream" id="ai-stream"></div>';
-    const streamEl = document.getElementById('ai-stream');
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '', fullText = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(data);
-          if (evt.type === 'content_block_delta' && evt.delta?.text) {
-            fullText += evt.delta.text;
-            streamEl.textContent = fullText;
-          }
-        } catch(_) {}
-      }
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error?.message || 'API error');
     }
 
-    // Extract "Card: ..." line for auto-fill
+    const data = await response.json();
+    const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!fullText) throw new Error('Empty response');
+
     const cardMatch = fullText.match(/Card:\s*(.+)/i);
     if (cardMatch) currentAddWord.en = cardMatch[1].trim();
 
-    // Render nicely
     renderAIText(fullText, aiEl);
 
   } catch(err) {
     aiEl.innerHTML = `<span style="color:var(--ink3);font-style:italic;">AI explanation unavailable. (${err.message})</span>`;
-  }
-}
+  }}
 
 function renderAIText(text, el) {
   // Simple formatting: bold section labels, bullet points
