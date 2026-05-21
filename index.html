@@ -828,13 +828,10 @@ Word tips: ...
 
 For the meaning line, also include a short English equivalent (2–5 words) that could serve as a vocabulary card definition, prefixed with "Card: " on a new line.`;
 
-  const GEMINI_KEY = 'AIzaSyAoh8eN5tGA7dXAb5Gpzl347_bY2NWx0LA';
-  const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
-
   try {
     aiEl.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div> Asking Gemini…</div>';
 
-    const response = await fetch(GEMINI_URL, {
+    const response = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
