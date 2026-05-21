@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/finnish_vocab.html" }
+    { "source": "/api/claude", "destination": "/api/claude.js" }
   ]
 }
