@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/finnish_vocab.html" }
+  ]
+}
