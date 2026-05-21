@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finnish Vocabulary — Sanasto</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f5f0e8;
+    --surface: #fffef9;
+    --surface2: #f0ebe0;
+    --ink: #1a1612;
+    --ink2: #5a5248;
+    --ink3: #9a9088;
+    --accent: #2d5a3d;
+    --accent-light: #e8f2eb;
+    --accent2: #8b3a2a;
+    --accent2-light: #f5ece9;
+    --gold: #c4913a;
+    --gold-light: #fdf4e7;
+    --border: rgba(26,22,18,0.12);
+    --border2: rgba(26,22,18,0.06);
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .logo { display: flex; align-items: baseline; gap: 10px; }
+  .logo h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.5px; }
+  .logo span { font-size: 13px; color: var(--ink3); font-style: italic; font-weight: 300; }
+  .flag { font-size: 22px; }
+
+  nav { display: flex; gap: 4px; }
+
+  .nav-btn {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    padding: 7px 15px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: transparent;
+    color: var(--ink2);
+    transition: all 0.15s;
+    font-weight: 300;
+  }
+  .nav-btn:hover { background: var(--surface2); color: var(--ink); }
+  .nav-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  main { flex: 1; max-width: 820px; margin: 0 auto; padding: 28px 24px; width: 100%; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── shared buttons ── */
+  .btn {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    padding: 10px 22px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 300;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { background: #214830; }
+  .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--surface2); }
+  .btn-danger { background: var(--accent2-light); color: var(--accent2); border-color: rgba(139,58,42,0.2); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .icon-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 5px; border-radius: 6px;
+    color: var(--ink3); font-size: 16px;
+    transition: all 0.15s; line-height: 1;
+  }
+  .icon-btn:hover { background: var(--surface2); color: var(--ink); }
+
+  /* ── word list ── */
+  .import-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .import-box label { font-size: 13px; color: var(--ink2); display: block; margin-bottom: 8px; font-weight: 300; }
+  textarea {
+    width: 100%; min-height: 160px;
+    font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.7;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; color: var(--ink); resize: vertical; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  .format-hint {
+    margin-top: 10px; font-size: 12px; color: var(--ink3);
+    font-family: 'DM Mono', monospace; background: var(--bg);
+    border-radius: 8px; padding: 10px 14px; border: 1px solid var(--border2);
+  }
+
+  .word-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .word-list-header {
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--ink3);
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 300; font-style: italic;
+  }
+  .word-item {
+    display: flex; align-items: center; padding: 11px 20px;
+    border-bottom: 1px solid var(--border2); gap: 16px; transition: background 0.1s;
+  }
+  .word-item:hover { background: var(--bg); }
+  .word-item:last-child { border-bottom: none; }
+  .word-fi { font-size: 15px; font-weight: 500; color: var(--accent); min-width: 150px; }
+  .word-en { font-size: 14px; color: var(--ink2); flex: 1; font-weight: 300; }
+  .word-actions { display: flex; gap: 4px; }
+
+  /* ── dictionary panel ── */
+  .dict-search-row {
+    display: flex; gap: 10px; margin-bottom: 20px;
+  }
+  .dict-input {
+    flex: 1;
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    padding: 12px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+    font-weight: 300;
+  }
+  .dict-input:focus { border-color: var(--accent); }
+  .dict-input::placeholder { color: var(--ink3); font-style: italic; }
+
+  .dict-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .dict-word-header {
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .dict-word-title { font-size: 36px; font-weight: 500; color: var(--accent); letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+  .dict-word-pos {
+    display: inline-block;
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    background: var(--gold-light); color: var(--gold);
+    border: 1px solid rgba(196,145,58,0.25);
+    padding: 2px 10px; border-radius: 50px; margin-right: 6px;
+  }
+  .dict-word-phonetic { font-size: 13px; color: var(--ink3); font-style: italic; margin-top: 4px; }
+
+  .dict-header-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+
+  .speak-btn-lg {
+    background: var(--accent-light);
+    border: 1px solid rgba(45,90,61,0.2);
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .speak-btn-lg:hover { background: var(--accent); color: white; }
+  .speak-btn-lg.speaking { background: var(--accent); color: white; }
+
+  .add-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .add-btn:hover { background: #214830; }
+  .add-btn.added { background: var(--surface2); color: var(--ink3); cursor: default; border: 1px solid var(--border); }
+
+  .dict-section { padding: 20px 28px; border-bottom: 1px solid var(--border2); }
+  .dict-section:last-child { border-bottom: none; }
+  .dict-section-label {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'DM Mono', monospace; color: var(--ink3); margin-bottom: 12px;
+  }
+
+  .dict-meanings { display: flex; flex-direction: column; gap: 10px; }
+  .dict-meaning-item { display: flex; gap: 10px; }
+  .dict-meaning-num { font-size: 12px; color: var(--ink3); font-family: 'DM Mono', monospace; padding-top: 2px; min-width: 16px; }
+  .dict-meaning-text { font-size: 15px; color: var(--ink2); font-weight: 300; line-height: 1.6; }
+  .dict-example { font-size: 13px; color: var(--ink3); font-style: italic; margin-top: 3px; }
+
+  /* AI section */
+  .ai-section {
+    padding: 20px 28px;
+    background: linear-gradient(to bottom, var(--gold-light), var(--surface));
+    border-top: 1px solid rgba(196,145,58,0.15);
+  }
+  .ai-label-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .ai-badge {
+    font-size: 10px; letter-spacing: 1.5px; font-family: 'DM Mono', monospace;
+    background: var(--gold); color: white; padding: 2px 8px; border-radius: 50px;
+  }
+  .ai-section-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-family: 'DM Mono', monospace; color: var(--ink3); }
+
+  .ai-content { font-size: 14px; color: var(--ink2); line-height: 1.8; font-weight: 300; }
+  .ai-content strong { font-weight: 500; color: var(--ink); }
+  .ai-content .ai-block { margin-bottom: 12px; }
+  .ai-content .ai-block:last-child { margin-bottom: 0; }
+  .ai-content .block-title { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--ink3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .ai-content ul { padding-left: 16px; }
+  .ai-content li { margin-bottom: 4px; }
+
+  .ai-loading {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--ink3); font-style: italic;
+  }
+  .ai-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ai-stream { white-space: pre-wrap; }
+
+  /* add-to-list override input */
+  .add-override {
+    display: flex; gap: 8px; margin-top: 8px; align-items: center;
+  }
+  .add-override input {
+    flex: 1;
+    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 300;
+    padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--ink); outline: none;
+  }
+  .add-override input:focus { border-color: var(--accent); }
+
+  /* ── flashcard ── */
+  .card-controls {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+  }
+  .progress-info { font-size: 13px; color: var(--ink3); font-style: italic; font-weight: 300; }
+  .card-wrap { perspective: 1200px; height: 280px; margin-bottom: 24px; cursor: pointer; }
+  .card-inner {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    gap: 14px; padding: 32px;
+  }
+  .card-face.back { transform: rotateY(180deg); }
+  .card-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink3); font-family: 'DM Mono', monospace; }
+  .card-word { font-size: 40px; font-weight: 500; letter-spacing: -1px; text-align: center; }
+  .card-word.fi { color: var(--accent); }
+  .card-hint { font-size: 13px; color: var(--ink3); font-style: italic; font-weight: 300; }
+  .card-translation { font-size: 26px; color: var(--ink2); font-weight: 300; font-style: italic; }
+  .speak-btn {
+    background: var(--accent-light); border: 1px solid rgba(45,90,61,0.2);
+    border-radius: 50px; padding: 8px 18px;
+    font-family: 'Fraunces', serif; font-size: 13px; color: var(--accent);
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .speak-btn:hover { background: var(--accent); color: white; }
+  .speak-btn.speaking { background: var(--accent); color: white; animation: pulse 0.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+
+  .card-nav { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .nav-arrow {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50%; width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; transition: all 0.15s; color: var(--ink2);
+  }
+  .nav-arrow:hover { background: var(--accent); color: white; border-color: var(--accent); }
+  .progress-dots { display: flex; gap: 6px; align-items: center; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: all 0.2s; }
+  .dot.active { background: var(--accent); transform: scale(1.3); }
+  .dot.done { background: var(--ink3); }
+
+  .mode-row { display: flex; gap: 8px; margin-bottom: 18px; }
+  .mode-btn {
+    font-family: 'Fraunces', serif; font-size: 13px; padding: 7px 16px;
+    border-radius: 8px; border: 1px solid var(--border);
+    cursor: pointer; background: var(--surface); color: var(--ink2);
+    transition: all 0.15s; font-weight: 300; font-style: italic;
+  }
+  .mode-btn.active { background: var(--gold-light); color: var(--gold); border-color: rgba(196,145,58,0.3); }
+
+  /* ── dictation ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
+  .stat-num { font-size: 26px; font-weight: 500; color: var(--accent); line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 12px; color: var(--ink3); font-weight: 300; font-style: italic; }
+
+  .dictation-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 36px; text-align: center; margin-bottom: 20px;
+  }
+  .dictation-question { font-size: 13px; color: var(--ink3); margin-bottom: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+  .dictation-zh { font-size: 30px; font-weight: 500; color: var(--ink); margin-bottom: 22px; letter-spacing: -0.5px; }
+  .audio-cue { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px; }
+  .audio-btn {
+    background: var(--accent); color: white; border: none; border-radius: 50px;
+    padding: 11px 26px; font-family: 'Fraunces', serif; font-size: 14px;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 8px;
+  }
+  .audio-btn:hover { background: #214830; }
+  .audio-btn.speaking { animation: pulse 0.8s infinite; }
+
+  .dictation-input-wrap { position: relative; max-width: 340px; margin: 0 auto 18px; }
+  .dictation-input {
+    width: 100%; font-family: 'DM Mono', monospace; font-size: 20px;
+    text-align: center; padding: 13px 18px;
+    border: 2px solid var(--border); border-radius: var(--radius);
+    background: var(--bg); color: var(--ink); outline: none;
+    transition: border-color 0.2s; letter-spacing: 1px;
+  }
+  .dictation-input:focus { border-color: var(--accent); }
+  .dictation-input.correct { border-color: #2d5a3d; background: var(--accent-light); }
+  .dictation-input.wrong { border-color: var(--accent2); background: var(--accent2-light); }
+
+  .dictation-feedback { min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin-bottom: 18px; }
+  .feedback-text { font-size: 15px; font-weight: 500; display: none; }
+  .feedback-text.correct-msg { color: var(--accent); display: block; }
+  .feedback-text.wrong-msg { color: var(--accent2); display: block; }
+  .feedback-correct-word { font-size: 13px; color: var(--ink3); display: none; font-family: 'DM Mono', monospace; }
+  .feedback-correct-word.show { display: block; }
+  .dictation-actions { display: flex; gap: 10px; justify-content: center; }
+
+  /* ── wave bars ── */
+  .wave-bars { display: flex; align-items: center; justify-content: center; gap: 3px; height: 18px; }
+  .bar { width: 3px; background: currentColor; border-radius: 2px; animation: wave 1s ease-in-out infinite; }
+  .bar:nth-child(2){animation-delay:.1s} .bar:nth-child(3){animation-delay:.2s}
+  .bar:nth-child(4){animation-delay:.3s} .bar:nth-child(5){animation-delay:.4s}
+  @keyframes wave { 0%,100%{height:3px} 50%{height:14px} }
+  .waveform { display: none; }
+  .waveform.active { display: flex; }
+
+  /* ── empty state ── */
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--ink3); }
+  .empty-state .icon { font-size: 42px; margin-bottom: 14px; opacity: 0.4; }
+  .empty-state p { font-size: 15px; font-style: italic; font-weight: 300; margin-bottom: 14px; }
+
+  /* ── notice ── */
+  .notice {
+    font-size: 13px; color: var(--ink3); font-style: italic;
+    background: var(--surface2); border-radius: 8px; padding: 8px 14px;
+    margin-bottom: 14px; font-weight: 300;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="flag">🇫🇮</span>
+    <h1>Sanasto</h1>
+    <span>Finnish vocabulary notebook</span>
+  </div>
+  <nav>
+    <button class="nav-btn" onclick="showPanel('lookup')">Dictionary</button>
+    <button class="nav-btn active" onclick="showPanel('import')">Word List</button>
+    <button class="nav-btn" onclick="showPanel('flashcard')">Flashcards</button>
+    <button class="nav-btn" onclick="showPanel('dictation')">Dictation</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ═══════════════ DICTIONARY PANEL ═══════════════ -->
+  <div id="panel-lookup" class="panel">
+    <div class="dict-search-row">
+      <input class="dict-input" id="dict-input" type="text"
+        placeholder="Search a Finnish or English word…"
+        onkeydown="if(event.key==='Enter') lookupWord()" autocomplete="off" autocorrect="off" />
+      <button class="btn btn-primary" onclick="lookupWord()">Look up</button>
+    </div>
+
+    <div class="notice" id="dict-api-notice" style="display:none;">
+      ⚠ The Free Dictionary API has limited Finnish coverage. AI explanation is always provided.
+    </div>
+
+    <div id="dict-result" style="display:none;"></div>
+
+    <div id="dict-empty" class="empty-state">
+      <div class="icon">📚</div>
+      <p>Search a word to see its definition, pronunciation, and AI explanation</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════ WORD LIST PANEL ═══════════════ -->
+  <div id="panel-import" class="panel active">
+    <div class="import-box">
+      <label>Import words (one per line, Finnish / English)</label>
+      <textarea id="import-text" placeholder="talo / house&#10;koira / dog&#10;auto / car&#10;kirja / book&#10;vesi / water"></textarea>
+      <div class="format-hint">
+        Format: Finnish / English (separated by /, Tab, or —)<br>
+        You can also use "Finnish - English" or "Finnish  English"
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:24px;">
+      <button class="btn btn-primary" onclick="importWords()">✦ Import words</button>
+      <button class="btn btn-secondary" onclick="loadSample()">Load sample</button>
+    </div>
+
+    <div id="word-list-section" style="display:none;">
+      <div class="word-list">
+        <div class="word-list-header">
+          <span id="word-count-label">—</span>
+          <button class="btn btn-danger" onclick="clearWords()" style="padding:5px 12px;font-size:12px;">Clear all</button>
+        </div>
+        <div id="word-list-body"></div>
+      </div>
+    </div>
+
+    <div id="empty-import">
+      <div class="empty-state">
+        <div class="icon">📖</div>
+        <p>No words yet — import some, load the sample, or look up words in the Dictionary tab</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ FLASHCARD PANEL ═══════════════ -->
+  <div id="panel-flashcard" class="panel">
+    <div id="fc-empty" class="empty-state">
+      <div class="icon">🃏</div>
+      <p>Import words in the Word List tab first</p>
+      <button class="btn btn-primary" onclick="showPanel('import')">Go import →</button>
+    </div>
+    <div id="fc-main" style="display:none;">
+      <div class="card-controls">
+        <div class="progress-info" id="fc-progress">Card 1 of 0</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="shuffleCards()" style="padding:7px 13px;font-size:13px;">Shuffle</button>
+          <button class="btn btn-secondary" onclick="resetCards()" style="padding:7px 13px;font-size:13px;">Reset</button>
+        </div>
+      </div>
+      <div class="mode-row">
+        <button class="mode-btn active" id="mode-fi" onclick="setCardMode('fi')">Finnish → English</button>
+        <button class="mode-btn" id="mode-zh" onclick="setCardMode('zh')">English → Finnish</button>
+      </div>
+      <div class="card-wrap" onclick="flipCard()">
+        <div class="card-inner" id="card-inner">
+          <div class="card-face front">
+            <div class="card-label" id="fc-front-label">Finnish</div>
+            <div class="card-word fi" id="fc-front-word">—</div>
+            <button class="speak-btn" id="fc-speak-btn" onclick="event.stopPropagation();speakFinnish()">
+              <span id="fc-wave" class="wave-bars waveform"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
+              <span id="fc-speak-label">🔊 Play audio</span>
+            </button>
+            <div class="card-hint">Click card to flip</div>
+          </div>
+          <div class="card-face back">
+            <div class="card-label" id="fc-back-label">English</div>
+            <div class="card-word" id="fc-back-word" style="font-style:italic;font-weight:300;">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-nav">
+        <button class="nav-arrow" onclick="prevCard()">←</button>
+        <div class="progress-dots" id="progress-dots"></div>
+        <button class="nav-arrow" onclick="nextCard()">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DICTATION PANEL ═══════════════ -->
+  <div id="panel-dictation" class="panel">
+    <div id="dt-empty" class="empty-state">
+      <div class="icon">✍️</div>
+      <p>Import words in the Word List tab first</p>
+      <button class="btn btn-primary" onclick="showPanel('import')">Go import →</button>
+    </div>
+    <div id="dt-main" style="display:none;">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="dt-total">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-card"><div class="stat-num" id="dt-done">0</div><div class="stat-label">Done</div></div>
+        <div class="stat-card"><div class="stat-num" id="dt-correct" style="color:var(--accent)">0</div><div class="stat-label">Correct</div></div>
+        <div class="stat-card"><div class="stat-num" id="dt-wrong" style="color:var(--accent2)">0</div><div class="stat-label">Wrong</div></div>
+      </div>
+      <div class="dictation-card">
+        <div class="dictation-question">Listen and spell the Finnish word</div>
+        <div class="dictation-zh" id="dt-zh">—</div>
+        <div class="audio-cue">
+          <button class="audio-btn" id="dt-audio-btn" onclick="speakDictation()">
+            <span id="dt-wave" class="wave-bars waveform"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
+            <span id="dt-speak-label">🔊 Play audio</span>
+          </button>
+        </div>
+        <div class="dictation-input-wrap">
+          <input class="dictation-input" id="dt-input" type="text"
+            placeholder="Type the Finnish word…" autocomplete="off" autocorrect="off"
+            onkeydown="if(event.key==='Enter') checkAnswer()" />
+        </div>
+        <div class="dictation-feedback">
+          <div class="feedback-text" id="dt-correct-msg">✓ Correct!</div>
+          <div class="feedback-text" id="dt-wrong-msg">✗ Incorrect</div>
+          <div class="feedback-correct-word" id="dt-correct-word"></div>
+        </div>
+        <div class="dictation-actions">
+          <button class="btn btn-primary" id="dt-check-btn" onclick="checkAnswer()">Check answer</button>
+          <button class="btn btn-secondary" id="dt-next-btn" onclick="nextDictation()" style="display:none;">Next →</button>
+          <button class="btn btn-secondary" id="dt-skip-btn" onclick="skipDictation()">Skip</button>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:10px;">
+        <button class="btn btn-secondary" onclick="restartDictation()" style="font-size:13px;padding:7px 16px;">Restart</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let words = [];
+let fcIndex = 0, fcMode = 'fi', fcShuffled = [], isFlipped = false;
+let dtQueue = [], dtIndex = 0, dtCorrect = 0, dtWrong = 0, dtAnswered = false, dtCurrentWord = null;
+
+/* ═══════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════ */
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  const labels = ['lookup','import','flashcard','dictation'];
+  document.querySelectorAll('.nav-btn')[labels.indexOf(name)].classList.add('active');
+  if (name === 'flashcard') initFlashcard();
+  if (name === 'dictation') initDictation();
+}
+
+/* ═══════════════════════════════════════════
+   WORD LIST
+═══════════════════════════════════════════ */
+function parseWords(text) {
+  return text.trim().split('\n').reduce((acc, line) => {
+    line = line.trim();
+    if (!line) return acc;
+    let parts;
+    if (line.includes('/')) parts = line.split('/');
+    else if (line.includes('\t')) parts = line.split('\t');
+    else if (line.includes(' - ')) parts = line.split(' - ');
+    else if (line.includes('  ')) parts = line.split(/\s{2,}/);
+    else return acc;
+    if (parts.length >= 2) acc.push({ fi: parts[0].trim(), en: parts[1].trim() });
+    return acc;
+  }, []);
+}
+
+function importWords() {
+  const parsed = parseWords(document.getElementById('import-text').value);
+  if (!parsed.length) { alert('No valid words detected. Please check the format.'); return; }
+  words = [...words, ...parsed].filter((w,i,a) => a.findIndex(x=>x.fi===w.fi)===i);
+  renderWordList();
+  document.getElementById('import-text').value = '';
+}
+
+function loadSample() {
+  document.getElementById('import-text').value =
+`talo / house
+koira / dog
+kissa / cat
+auto / car
+kirja / book
+vesi / water
+ruoka / food
+perhe / family
+työ / work
+ystävä / friend
+koulu / school
+kaupunki / city
+maa / country
+aika / time
+päivä / day`;
+  importWords();
+}
+
+function addWordToList(fi, en) {
+  if (words.find(w => w.fi === fi)) return false;
+  words.push({ fi, en });
+  renderWordList();
+  return true;
+}
+
+function renderWordList() {
+  const body = document.getElementById('word-list-body');
+  const section = document.getElementById('word-list-section');
+  const empty = document.getElementById('empty-import');
+  if (!words.length) { section.style.display='none'; empty.style.display='block'; return; }
+  section.style.display = 'block';
+  empty.style.display = 'none';
+  document.getElementById('word-count-label').textContent = `${words.length} word${words.length===1?'':'s'}`;
+  body.innerHTML = words.map((w,i) => `
+    <div class="word-item">
+      <div class="word-fi">${esc(w.fi)}</div>
+      <div class="word-en">${esc(w.en)}</div>
+      <div class="word-actions">
+        <button class="icon-btn" onclick="speakWord('${esc(w.fi.replace(/'/g,"\\'"))}',null)" title="Play">🔊</button>
+        <button class="icon-btn" onclick="lookupFromList('${esc(w.fi.replace(/'/g,"\\'"))}')" title="Look up">🔍</button>
+        <button class="icon-btn" onclick="deleteWord(${i})" title="Remove">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function deleteWord(i) { words.splice(i,1); renderWordList(); }
+function clearWords() { if(confirm('Clear all words?')){ words=[]; renderWordList(); } }
+function lookupFromList(fi) { showPanel('lookup'); document.getElementById('dict-input').value=fi; lookupWord(); }
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════
+   DICTIONARY LOOKUP
+═══════════════════════════════════════════ */
+async function lookupWord() {
+  const query = document.getElementById('dict-input').value.trim();
+  if (!query) return;
+
+  const resultEl = document.getElementById('dict-result');
+  const emptyEl = document.getElementById('dict-empty');
+  const noticeEl = document.getElementById('dict-api-notice');
+
+  emptyEl.style.display = 'none';
+  noticeEl.style.display = 'none';
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `<div style="padding:32px;text-align:center;color:var(--ink3);font-style:italic;">Looking up <strong style="color:var(--accent)">${esc(query)}</strong>…</div>`;
+
+  // Try Free Dictionary API
+  let dictData = null;
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(query)}`);
+    if (r.ok) {
+      const json = await r.json();
+      if (Array.isArray(json) && json.length) dictData = json[0];
+    }
+  } catch(_) {}
+
+  // Determine if Finnish or English query (heuristic: Finnish chars or not in dict)
+  const likelyFinnish = /[äöåÄÖÅ]/.test(query) || !dictData;
+
+  if (!dictData && likelyFinnish) {
+    noticeEl.style.display = 'block';
+  }
+
+  // Build basic header from dict data or raw query
+  const headword = dictData?.word || query;
+  const phonetic = dictData?.phonetic || '';
+  const partOfSpeech = dictData?.meanings?.[0]?.partOfSpeech || '';
+  const definitions = (dictData?.meanings || []).flatMap(m =>
+    m.definitions.slice(0,2).map(d => ({ pos: m.partOfSpeech, def: d.definition, ex: d.example||'' }))
+  ).slice(0, 5);
+
+  const alreadyAdded = words.some(w => w.fi === headword);
+
+  resultEl.innerHTML = `
+    <div class="dict-result">
+      <div class="dict-word-header">
+        <div>
+          <div class="dict-word-title">${esc(headword)}</div>
+          <div>
+            ${partOfSpeech ? `<span class="dict-word-pos">${esc(partOfSpeech)}</span>` : ''}
+            ${phonetic ? `<span class="dict-word-phonetic">${esc(phonetic)}</span>` : ''}
+          </div>
+        </div>
+        <div class="dict-header-actions">
+          <button class="speak-btn-lg" onclick="speakLookup('${esc(headword.replace(/'/g,"\\'"))}')" id="lookup-speak-btn">
+            <span id="lookup-wave" class="wave-bars waveform"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
+            🔊 Listen
+          </button>
+          <button class="add-btn ${alreadyAdded?'added':''}" id="add-word-btn"
+            onclick="handleAddWord('${esc(headword.replace(/'/g,"\\'"))}')">
+            ${alreadyAdded ? '✓ In word list' : '+ Add to word list'}
+          </button>
+        </div>
+      </div>
+
+      ${definitions.length ? `
+      <div class="dict-section">
+        <div class="dict-section-label">Definitions</div>
+        <div class="dict-meanings">
+          ${definitions.map((d,i) => `
+            <div class="dict-meaning-item">
+              <div class="dict-meaning-num">${i+1}.</div>
+              <div>
+                <div class="dict-meaning-text">${esc(d.def)}</div>
+                ${d.ex ? `<div class="dict-example">"${esc(d.ex)}"</div>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="ai-section">
+        <div class="ai-label-row">
+          <span class="ai-badge">AI</span>
+          <span class="ai-section-label">Claude's explanation</span>
+        </div>
+        <div class="ai-content" id="ai-content">
+          <div class="ai-loading"><div class="ai-spinner"></div> Asking Claude…</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Auto-play pronunciation
+  speakLookup(headword);
+
+  // Fetch AI explanation
+  await fetchAIExplanation(query, headword, likelyFinnish);
+}
+
+let currentAddWord = { fi: '', en: '' };
+
+function handleAddWord(fi) {
+  const btn = document.getElementById('add-word-btn');
+  if (btn.classList.contains('added')) return;
+
+  // Show override input to let user edit the English meaning
+  const aiContent = document.getElementById('ai-content');
+  const existingOverride = document.getElementById('add-override-row');
+  if (existingOverride) { existingOverride.remove(); }
+
+  // Try to extract a short English meaning from AI content
+  const guessedEn = currentAddWord.en || '';
+
+  const row = document.createElement('div');
+  row.id = 'add-override-row';
+  row.className = 'add-override';
+  row.innerHTML = `
+    <input id="override-en" type="text" placeholder="English meaning…" value="${esc(guessedEn)}" />
+    <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="confirmAdd('${esc(fi.replace(/'/g,"\\'"))}')">Add</button>
+  `;
+
+  btn.closest('.dict-result').querySelector('.dict-word-header').after(row);
+  document.getElementById('override-en').focus();
+}
+
+function confirmAdd(fi) {
+  const en = document.getElementById('override-en').value.trim();
+  if (!en) { alert('Please enter an English meaning.'); return; }
+  const added = addWordToList(fi, en);
+  const row = document.getElementById('add-override-row');
+  if (row) row.remove();
+  const btn = document.getElementById('add-word-btn');
+  if (btn) {
+    btn.textContent = added ? '✓ Added!' : '✓ Already in list';
+    btn.classList.add('added');
+  }
+}
+
+async function fetchAIExplanation(query, headword, likelyFinnish) {
+  const aiEl = document.getElementById('ai-content');
+  const langHint = likelyFinnish
+    ? `The word "${query}" appears to be Finnish.`
+    : `The word "${query}" may be English or Finnish.`;
+
+  const prompt = `${langHint}
+
+Please give a concise learner-focused explanation with these sections:
+1. **Meaning** – 1–2 sentence English meaning/translation
+2. **Finnish examples** – 2–3 short example sentences in Finnish with English translation in parentheses
+3. **Word tips** – any useful notes (word class, common inflections, compound roots, usage tips, or register)
+
+Keep it brief and practical. Use plain text, no markdown headers.
+Format each section clearly labeled like:
+Meaning: ...
+Examples:
+- sentence (translation)
+Word tips: ...
+
+For the meaning line, also include a short English equivalent (2–5 words) that could serve as a vocabulary card definition, prefixed with "Card: " on a new line.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        stream: true,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) throw new Error('API error');
+
+    aiEl.innerHTML = '<div class="ai-stream" id="ai-stream"></div>';
+    const streamEl = document.getElementById('ai-stream');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '', fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_delta' && evt.delta?.text) {
+            fullText += evt.delta.text;
+            streamEl.textContent = fullText;
+          }
+        } catch(_) {}
+      }
+    }
+
+    // Extract "Card: ..." line for auto-fill
+    const cardMatch = fullText.match(/Card:\s*(.+)/i);
+    if (cardMatch) currentAddWord.en = cardMatch[1].trim();
+
+    // Render nicely
+    renderAIText(fullText, aiEl);
+
+  } catch(err) {
+    aiEl.innerHTML = `<span style="color:var(--ink3);font-style:italic;">AI explanation unavailable. (${err.message})</span>`;
+  }
+}
+
+function renderAIText(text, el) {
+  // Simple formatting: bold section labels, bullet points
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) { if (inList) { html += '</ul>'; inList = false; } html += '<br>'; continue; }
+
+    if (line.startsWith('- ') || line.startsWith('• ')) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${esc(line.slice(2))}</li>`;
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      // Bold section labels like "Meaning:", "Examples:", "Word tips:", "Card:"
+      line = line.replace(/^(Meaning|Examples|Word tips|Card|Note):/i, (m, p1) =>
+        `<strong>${p1}:</strong>`);
+      html += `<p style="margin-bottom:6px;">${line}</p>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  el.innerHTML = `<div class="ai-block">${html}</div>`;
+}
+
+function speakLookup(word) {
+  const wave = document.getElementById('lookup-wave');
+  const btn = document.getElementById('lookup-speak-btn');
+  speakWord(word, (speaking) => {
+    if (wave) wave.classList.toggle('active', speaking);
+    if (btn) btn.classList.toggle('speaking', speaking);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   TTS
+═══════════════════════════════════════════ */
+function speakWord(text, callback) {
+  if (!('speechSynthesis' in window)) { alert('Speech synthesis not supported in this browser.'); return; }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'fi-FI'; utter.rate = 0.85; utter.pitch = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const fiVoice = voices.find(v => v.lang.startsWith('fi'));
+  if (fiVoice) utter.voice = fiVoice;
+  if (callback) { utter.onstart=()=>callback(true); utter.onend=()=>callback(false); utter.onerror=()=>callback(false); }
+  window.speechSynthesis.speak(utter);
+}
+
+/* ═══════════════════════════════════════════
+   FLASHCARD
+═══════════════════════════════════════════ */
+function initFlashcard() {
+  const hasWords = words.length > 0;
+  document.getElementById('fc-empty').style.display = hasWords ? 'none' : 'block';
+  document.getElementById('fc-main').style.display = hasWords ? 'block' : 'none';
+  if (!hasWords) return;
+  fcShuffled = [...words]; fcIndex = 0; renderCard();
+}
+
+function shuffleCards() { fcShuffled=[...words].sort(()=>Math.random()-.5); fcIndex=0; isFlipped=false; document.getElementById('card-inner').classList.remove('flipped'); renderCard(); }
+function resetCards() { fcShuffled=[...words]; fcIndex=0; isFlipped=false; document.getElementById('card-inner').classList.remove('flipped'); renderCard(); }
+
+function setCardMode(mode) {
+  fcMode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mode-'+mode).classList.add('active');
+  isFlipped=false; document.getElementById('card-inner').classList.remove('flipped'); renderCard();
+}
+
+function renderCard() {
+  if (!fcShuffled.length) return;
+  const w=fcShuffled[fcIndex], isFi=fcMode==='fi';
+  document.getElementById('fc-front-label').textContent = isFi?'Finnish':'English';
+  document.getElementById('fc-front-word').textContent = isFi?w.fi:w.en;
+  document.getElementById('fc-front-word').className = 'card-word '+(isFi?'fi':'');
+  document.getElementById('fc-back-label').textContent = isFi?'English':'Finnish';
+  document.getElementById('fc-back-word').textContent = isFi?w.en:w.fi;
+  document.getElementById('fc-progress').textContent = `Card ${fcIndex+1} of ${fcShuffled.length}`;
+  const dots=document.getElementById('progress-dots'), max=Math.min(fcShuffled.length,9);
+  dots.innerHTML='';
+  for(let i=0;i<max;i++){const d=document.createElement('div');d.className='dot'+(i===fcIndex%max?' active':i<fcIndex%max?' done':'');dots.appendChild(d);}
+}
+
+function flipCard() { isFlipped=!isFlipped; document.getElementById('card-inner').classList.toggle('flipped',isFlipped); }
+function prevCard() { if(fcIndex>0){fcIndex--;isFlipped=false;document.getElementById('card-inner').classList.remove('flipped');renderCard();} }
+function nextCard() { if(fcIndex<fcShuffled.length-1){fcIndex++;isFlipped=false;document.getElementById('card-inner').classList.remove('flipped');renderCard();} }
+
+function speakFinnish() {
+  const w=fcShuffled[fcIndex];
+  const wave=document.getElementById('fc-wave'), label=document.getElementById('fc-speak-label');
+  speakWord(w.fi,(speaking)=>{
+    wave.classList.toggle('active',speaking);
+    label.textContent=speaking?'Playing…':'🔊 Play audio';
+  });
+}
+
+/* ═══════════════════════════════════════════
+   DICTATION
+═══════════════════════════════════════════ */
+function initDictation() {
+  const hasWords=words.length>0;
+  document.getElementById('dt-empty').style.display=hasWords?'none':'block';
+  document.getElementById('dt-main').style.display=hasWords?'block':'none';
+  if (hasWords) restartDictation();
+}
+
+function restartDictation() {
+  dtQueue=[...words].sort(()=>Math.random()-.5);
+  dtIndex=0; dtCorrect=0; dtWrong=0;
+  document.getElementById('dt-input').style.display='';
+  document.querySelector('.audio-cue').style.display='';
+  updateDtStats(); loadDictation();
+}
+
+function loadDictation() {
+  if (dtIndex>=dtQueue.length){showDictationResult();return;}
+  dtCurrentWord=dtQueue[dtIndex]; dtAnswered=false;
+  document.getElementById('dt-zh').textContent=dtCurrentWord.en;
+  document.getElementById('dt-input').value='';
+  document.getElementById('dt-input').className='dictation-input';
+  document.getElementById('dt-input').disabled=false;
+  document.getElementById('dt-correct-msg').className='feedback-text';
+  document.getElementById('dt-wrong-msg').className='feedback-text';
+  document.getElementById('dt-correct-word').className='feedback-correct-word';
+  document.getElementById('dt-check-btn').style.display='inline-flex';
+  document.getElementById('dt-next-btn').style.display='none';
+  document.getElementById('dt-skip-btn').style.display='inline-flex';
+  updateDtStats();
+  setTimeout(()=>speakDictation(),300);
+  document.getElementById('dt-input').focus();
+}
+
+function speakDictation() {
+  if(!dtCurrentWord) return;
+  const wave=document.getElementById('dt-wave'), label=document.getElementById('dt-speak-label');
+  speakWord(dtCurrentWord.fi,(speaking)=>{
+    wave.classList.toggle('active',speaking);
+    label.textContent=speaking?'Playing…':'🔊 Play again';
+  });
+}
+
+function normalize(s){return s.trim().toLowerCase();}
+
+function checkAnswer() {
+  if(dtAnswered) return;
+  const input=document.getElementById('dt-input'), answer=input.value, correct=dtCurrentWord.fi;
+  dtAnswered=true; dtIndex++;
+  if(normalize(answer)===normalize(correct)){
+    dtCorrect++; input.className='dictation-input correct';
+    document.getElementById('dt-correct-msg').className='feedback-text correct-msg';
+  } else {
+    dtWrong++; input.className='dictation-input wrong';
+    document.getElementById('dt-wrong-msg').className='feedback-text wrong-msg';
+    document.getElementById('dt-correct-word').textContent='Correct: '+correct;
+    document.getElementById('dt-correct-word').className='feedback-correct-word show';
+  }
+  input.disabled=true;
+  document.getElementById('dt-check-btn').style.display='none';
+  document.getElementById('dt-next-btn').style.display='inline-flex';
+  document.getElementById('dt-skip-btn').style.display='none';
+  updateDtStats();
+}
+
+function nextDictation(){loadDictation();}
+function skipDictation(){dtIndex++;loadDictation();}
+
+function updateDtStats(){
+  document.getElementById('dt-total').textContent=dtQueue.length;
+  document.getElementById('dt-done').textContent=Math.min(dtIndex,dtQueue.length);
+  document.getElementById('dt-correct').textContent=dtCorrect;
+  document.getElementById('dt-wrong').textContent=dtWrong;
+}
+
+function showDictationResult(){
+  document.getElementById('dt-zh').textContent='All done!';
+  document.getElementById('dt-input').style.display='none';
+  document.querySelector('.audio-cue').style.display='none';
+  document.querySelector('.dictation-actions').innerHTML=`<button class="btn btn-primary" onclick="restartDictation()">Practice again</button>`;
+  const pct=Math.round(dtCorrect/(dtCorrect+dtWrong)*100)||0;
+  document.getElementById('dt-correct-msg').textContent=`Accuracy: ${pct}%`;
+  document.getElementById('dt-correct-msg').className='feedback-text correct-msg';
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged=()=>{window.speechSynthesis.getVoices();};
+  window.speechSynthesis.getVoices();
+}
+renderWordList();
+</script>
+</body>
+</html>
