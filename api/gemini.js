@@ -16,7 +16,7 @@ export default async function handler(req) {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'API key not configured' }), {
       status: 500,
@@ -26,17 +26,34 @@ export default async function handler(req) {
 
   try {
     const body = await req.json();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-    const upstream = await fetch(url, {
+    // Convert Gemini format to Groq (OpenAI-compatible) format
+    const prompt = body.contents?.[0]?.parts?.[0]?.text || '';
+    const groqBody = {
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: body.generationConfig?.maxOutputTokens || 600,
+      temperature: body.generationConfig?.temperature || 0.4,
+    };
+
+    const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(groqBody),
     });
 
     const data = await upstream.json();
 
-    return new Response(JSON.stringify(data), {
+    // Convert Groq response back to Gemini format so frontend works unchanged
+    const text = data.choices?.[0]?.message?.content || '';
+    const geminiFormat = {
+      candidates: [{ content: { parts: [{ text }] } }]
+    };
+
+    return new Response(JSON.stringify(geminiFormat), {
       status: upstream.status,
       headers: {
         'Content-Type': 'application/json',
