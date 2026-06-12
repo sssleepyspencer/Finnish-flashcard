@@ -416,32 +416,7 @@
     margin-bottom: 14px; font-weight: 300;
   }
 
-  /* ── key modal ── */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.35); z-index: 100;
-    align-items: center; justify-content: center;
-  }
-  .modal-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); padding: 32px; max-width: 420px; width: 90%;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-  }
-  .modal-box h2 { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
-  .modal-box p { font-size: 13px; color: var(--ink3); font-weight: 300; margin-bottom: 18px; line-height: 1.6; }
-  .modal-box input {
-    width: 100%; font-family: 'DM Mono', monospace; font-size: 13px;
-    padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius);
-    background: var(--bg); color: var(--ink); outline: none; margin-bottom: 14px;
-  }
-  .modal-box input:focus { border-color: var(--accent); }
-  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-  .settings-btn {
-    background: none; border: 1px solid var(--border); border-radius: 8px;
-    padding: 7px 13px; cursor: pointer; font-size: 13px; color: var(--ink3);
-    font-family: 'Fraunces', serif; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
-  }
-  .settings-btn:hover { background: var(--surface2); color: var(--ink); }
+
 </style>
 </head>
 <body>
@@ -457,21 +432,9 @@
     <button class="nav-btn active" onclick="showPanel('import')">Word List</button>
     <button class="nav-btn" onclick="showPanel('flashcard')">Flashcards</button>
     <button class="nav-btn" onclick="showPanel('dictation')">Dictation</button>
-    <button class="settings-btn" onclick="openKeyModal()" title="Gemini API Key">⚙ <span id="key-status">AI off</span></button>
   </nav>
 </header>
 
-<!-- API Key Modal -->
-<div class="modal-overlay" id="key-modal" onclick="if(event.target===this)closeKeyModal()">
-  <div class="modal-box">
-    <h2>Gemini API Key</h2>
-    <p>Enter your Google Gemini API key to enable AI-powered word explanations. Your key is stored only in your browser's local storage and never sent anywhere except Google's API.<br><br>
-    Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com/apikey</a></p>
-    <input id="key-input" type="password" placeholder="AIza…" onkeydown="if(event.key==='Enter')submitKey()" />
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeKeyModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitKey()">Save</button>
-    </div>
   </div>
 </div>
 
@@ -748,7 +711,7 @@ function renderWordList() {
   body.innerHTML = words.map((w,i) => `
     <div class="word-item">
       <div class="word-fi">${esc(w.fi)}</div>
-      <div class="word-en">${esc(w.en)}</div>
+      <div class="word-en">${esc(w.en)}${w.notes ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px;font-style:italic;">${esc(w.notes.slice(0,80))}${w.notes.length>80?'…':''}</div>` : ''}</div>
       <div class="word-actions">
         <button class="icon-btn" onclick="speakWord('${esc(w.fi.replace(/'/g,"\\'"))}',null)" title="Play">🔊</button>
         <button class="icon-btn" onclick="lookupFromList('${esc(w.fi.replace(/'/g,"\\'"))}')" title="Look up">🔍</button>
@@ -1028,33 +991,7 @@ Keep it brief and practical. Plain text only, no markdown.`;
   }
 }
 
-/* ═══════════════════════════════════════════
-   GEMINI API KEY (stored in localStorage)
-═══════════════════════════════════════════ */
-function getGeminiKey() {
-  return localStorage.getItem('gemini_api_key') || '';
-}
-function saveGeminiKey(key) {
-  if (key) localStorage.setItem('gemini_api_key', key);
-  else localStorage.removeItem('gemini_api_key');
-}
-function openKeyModal() {
-  const modal = document.getElementById('key-modal');
-  document.getElementById('key-input').value = getGeminiKey();
-  modal.style.display = 'flex';
-  document.getElementById('key-input').focus();
-}
-function closeKeyModal() {
-  document.getElementById('key-modal').style.display = 'none';
-}
-function submitKey() {
-  const val = document.getElementById('key-input').value.trim();
-  saveGeminiKey(val);
-  closeKeyModal();
-  // Update badge
-  document.getElementById('key-status').textContent = val ? '✓ AI on' : 'AI off';
-  document.getElementById('key-status').style.color = val ? 'var(--accent)' : 'var(--ink3)';
-}
+
 
 
 function renderAIText(text, el) {
@@ -1248,12 +1185,7 @@ if('speechSynthesis' in window){
   window.speechSynthesis.onvoiceschanged=()=>{window.speechSynthesis.getVoices();};
   window.speechSynthesis.getVoices();
 }
-// Init Gemini key badge
-(function(){
-  const k = localStorage.getItem('gemini_api_key');
-  const el = document.getElementById('key-status');
-  if (k && el) { el.textContent = '✓ AI on'; el.style.color = 'var(--accent)'; }
-})();
+
 fetchWords();
 </script>
 </body>
