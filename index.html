@@ -614,6 +614,34 @@
    STATE
 ═══════════════════════════════════════════ */
 let words = [];
+
+/* ═══════════════════════════════════════════
+   WORDS API
+═══════════════════════════════════════════ */
+async function fetchWords() {
+  try {
+    const res = await fetch('/api/words');
+    words = await res.json();
+    renderWordList();
+  } catch(err) {
+    console.error('Failed to load words:', err);
+  }
+}
+
+async function apiAddWord(fi, en) {
+  const res = await fetch('/api/words', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fi, en })
+  });
+  if (!res.ok) throw new Error('Failed to add word');
+  return await res.json();
+}
+
+async function apiDeleteWord(id) {
+  await fetch(`/api/words?id=${id}`, { method: 'DELETE' });
+}
+
 let fcIndex = 0, fcMode = 'fi', fcShuffled = [], isFlipped = false;
 let dtQueue = [], dtIndex = 0, dtCorrect = 0, dtWrong = 0, dtAnswered = false, dtCurrentWord = null;
 
@@ -648,10 +676,17 @@ function parseWords(text) {
   }, []);
 }
 
-function importWords() {
+async function importWords() {
   const parsed = parseWords(document.getElementById('import-text').value);
   if (!parsed.length) { alert('No valid words detected. Please check the format.'); return; }
-  words = [...words, ...parsed].filter((w,i,a) => a.findIndex(x=>x.fi===w.fi)===i);
+  const existing = new Set(words.map(w => w.fi));
+  const toAdd = parsed.filter(w => !existing.has(w.fi));
+  for (const w of toAdd) {
+    try {
+      const word = await apiAddWord(w.fi, w.en);
+      words.unshift(word);
+    } catch(e) {}
+  }
   renderWordList();
   document.getElementById('import-text').value = '';
 }
@@ -676,11 +711,17 @@ päivä / day`;
   importWords();
 }
 
-function addWordToList(fi, en) {
+async function addWordToList(fi, en) {
   if (words.find(w => w.fi === fi)) return false;
-  words.push({ fi, en });
-  renderWordList();
-  return true;
+  try {
+    const word = await apiAddWord(fi, en);
+    words.unshift(word);
+    renderWordList();
+    return true;
+  } catch(err) {
+    console.error('Failed to add word:', err);
+    return false;
+  }
 }
 
 function renderWordList() {
@@ -698,13 +739,22 @@ function renderWordList() {
       <div class="word-actions">
         <button class="icon-btn" onclick="speakWord('${esc(w.fi.replace(/'/g,"\\'"))}',null)" title="Play">🔊</button>
         <button class="icon-btn" onclick="lookupFromList('${esc(w.fi.replace(/'/g,"\\'"))}')" title="Look up">🔍</button>
-        <button class="icon-btn" onclick="deleteWord(${i})" title="Remove">✕</button>
+        <button class="icon-btn" onclick="deleteWord(${w.id})" title="Remove">✕</button>
       </div>
     </div>`).join('');
 }
 
-function deleteWord(i) { words.splice(i,1); renderWordList(); }
-function clearWords() { if(confirm('Clear all words?')){ words=[]; renderWordList(); } }
+async function deleteWord(id) {
+  await apiDeleteWord(id);
+  words = words.filter(w => w.id !== id);
+  renderWordList();
+}
+async function clearWords() {
+  if (!confirm('Clear all words?')) return;
+  await Promise.all(words.map(w => apiDeleteWord(w.id)));
+  words = [];
+  renderWordList();
+}
 function lookupFromList(fi) { showPanel('lookup'); document.getElementById('dict-input').value=fi; lookupWord(); }
 
 function esc(s) {
@@ -837,10 +887,10 @@ function handleAddWord(fi) {
   document.getElementById('override-en').focus();
 }
 
-function confirmAdd(fi) {
+async function confirmAdd(fi) {
   const en = document.getElementById('override-en').value.trim();
   if (!en) { alert('Please enter an English meaning.'); return; }
-  const added = addWordToList(fi, en);
+  const added = await addWordToList(fi, en);
   const row = document.getElementById('add-override-row');
   if (row) row.remove();
   const btn = document.getElementById('add-word-btn');
@@ -1138,7 +1188,7 @@ if('speechSynthesis' in window){
   const el = document.getElementById('key-status');
   if (k && el) { el.textContent = '✓ AI on'; el.style.color = 'var(--accent)'; }
 })();
-renderWordList();
+fetchWords();
 </script>
 </body>
 </html>
