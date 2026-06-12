@@ -806,6 +806,7 @@ async function lookupWord() {
 
   // Fetch from Wiktionary (Finnish entries)
   const wiktData = await fetchWiktionary(query);
+  currentWiktData = wiktData;
   const alreadyAdded = words.some(w => w.fi === query);
 
   // Build definitions HTML from Wiktionary
@@ -869,22 +870,35 @@ async function lookupWord() {
 }
 
 let currentAddWord = { fi: '', en: '' };
+let currentWiktData = null;
 
-function handleAddWord(fi) {
+function buildEnFromWikt(wiktData) {
+  if (!wiktData || !wiktData.length) return '';
+  const parts = [];
+  for (const entry of wiktData) {
+    const posAbbr = {
+      'noun': 'n.', 'verb': 'v.', 'adjective': 'adj.', 'adverb': 'adv.',
+      'pronoun': 'pron.', 'conjunction': 'conj.', 'preposition': 'prep.',
+      'interjection': 'interj.', 'numeral': 'num.'
+    };
+    const pos = entry.pos ? (posAbbr[entry.pos.toLowerCase()] || entry.pos.toLowerCase()) : '';
+    const defs = entry.defs.map(d => d.def).join('; ');
+    parts.push(pos ? `${pos} ${defs}` : defs);
+  }
+  return parts.join('; ');
+}
+
+async function handleAddWord(fi) {
   const btn = document.getElementById('add-word-btn');
   if (btn.classList.contains('added')) return;
-  const existingOverride = document.getElementById('add-override-row');
-  if (existingOverride) existingOverride.remove();
-  const guessedEn = currentAddWord.en || '';
-  const row = document.createElement('div');
-  row.id = 'add-override-row';
-  row.className = 'add-override';
-  row.innerHTML = `
-    <input id="override-en" type="text" placeholder="English meaning…" value="${esc(guessedEn)}" />
-    <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="confirmAdd('${esc(fi.replace(/'/g,"\\'"))}')">Add</button>
-  `;
-  btn.closest('.dict-result').querySelector('.dict-word-header').after(row);
-  document.getElementById('override-en').focus();
+  // Auto-build English from Wiktionary, fall back to AI card
+  const en = buildEnFromWikt(currentWiktData) || currentAddWord.en || '';
+  btn.textContent = 'Adding…';
+  btn.disabled = true;
+  const added = await addWordToList(fi, en);
+  btn.disabled = false;
+  btn.textContent = added ? '✓ Added!' : '✓ Already in list';
+  btn.classList.add('added');
 }
 
 async function confirmAdd(fi) {
