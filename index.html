@@ -908,18 +908,13 @@ function fillNotesFromAI() {
     textarea.placeholder = 'AI explanation not loaded yet…';
     return;
   }
-  // Strip "Card: ..." line, keep Meaning / Examples / Word tips
   const cleaned = currentAIText
     .replace(/^Card:.*$/im, '')
-    .replace(/
-{3,}/g, '
-
-')
+    .replace(/[ \t]*[\n]{3,}/g, '\n\n')
     .trim();
   textarea.value = cleaned;
   textarea.focus();
 }
-
 async function confirmAdd(fi) {
   const en = document.getElementById('override-en').value.trim();
   const notes = document.getElementById('override-notes').value.trim();
