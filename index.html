@@ -271,17 +271,30 @@
 
   .ai-stream { white-space: pre-wrap; }
 
-  /* add-to-list override input */
+  /* add-to-list form */
   .add-override {
-    display: flex; gap: 8px; margin-top: 8px; align-items: center;
+    margin-top: 16px; padding: 16px; background: var(--surface2);
+    border-radius: 12px; border: 1px solid var(--border);
   }
-  .add-override input {
-    flex: 1;
-    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 300;
+  .add-override-grid {
+    display: grid; gap: 10px; margin-bottom: 12px;
+  }
+  .add-override-field label {
+    display: block; font-size: 11px; font-family: 'DM Mono', monospace;
+    letter-spacing: 1px; text-transform: uppercase; color: var(--ink3);
+    margin-bottom: 4px;
+  }
+  .add-override-field input,
+  .add-override-field textarea {
+    width: 100%; font-family: 'Fraunces', serif; font-size: 14px; font-weight: 300;
     padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
     background: var(--bg); color: var(--ink); outline: none;
+    box-sizing: border-box;
   }
-  .add-override input:focus { border-color: var(--accent); }
+  .add-override-field textarea { resize: vertical; min-height: 64px; }
+  .add-override-field input:focus,
+  .add-override-field textarea:focus { border-color: var(--accent); }
+  .add-override-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
   /* ── flashcard ── */
   .card-controls {
@@ -628,11 +641,11 @@ async function fetchWords() {
   }
 }
 
-async function apiAddWord(fi, en) {
+async function apiAddWord(fi, en, notes = '') {
   const res = await fetch('/api/words', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fi, en })
+    body: JSON.stringify({ fi, en, notes })
   });
   if (!res.ok) throw new Error('Failed to add word');
   return await res.json();
@@ -711,10 +724,10 @@ päivä / day`;
   importWords();
 }
 
-async function addWordToList(fi, en) {
+async function addWordToList(fi, en, notes = '') {
   if (words.find(w => w.fi === fi)) return false;
   try {
-    const word = await apiAddWord(fi, en);
+    const word = await apiAddWord(fi, en, notes);
     words.unshift(word);
     renderWordList();
     return true;
@@ -888,23 +901,46 @@ function buildEnFromWikt(wiktData) {
   return parts.join('; ');
 }
 
-async function handleAddWord(fi) {
+function handleAddWord(fi) {
   const btn = document.getElementById('add-word-btn');
   if (btn.classList.contains('added')) return;
-  // Auto-build English from Wiktionary, fall back to AI card
+  const existingForm = document.getElementById('add-override-row');
+  if (existingForm) { existingForm.remove(); return; }
+
   const en = buildEnFromWikt(currentWiktData) || currentAddWord.en || '';
-  btn.textContent = 'Adding…';
-  btn.disabled = true;
-  const added = await addWordToList(fi, en);
-  btn.disabled = false;
-  btn.textContent = added ? '✓ Added!' : '✓ Already in list';
-  btn.classList.add('added');
+
+  const row = document.createElement('div');
+  row.id = 'add-override-row';
+  row.className = 'add-override';
+  row.innerHTML = `
+    <div class="add-override-grid">
+      <div class="add-override-field">
+        <label>Finnish</label>
+        <input id="override-fi" type="text" value="${esc(fi)}" readonly style="opacity:0.6;cursor:default;" />
+      </div>
+      <div class="add-override-field">
+        <label>English</label>
+        <input id="override-en" type="text" value="${esc(en)}" placeholder="English meaning…" />
+      </div>
+      <div class="add-override-field">
+        <label>Notes</label>
+        <textarea id="override-notes" placeholder="Your notes, memory tips, AI summary…"></textarea>
+      </div>
+    </div>
+    <div class="add-override-actions">
+      <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="document.getElementById('add-override-row').remove()">Cancel</button>
+      <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="confirmAdd('${esc(fi.replace(/'/g,"\\'"))}')">Add to list</button>
+    </div>
+  `;
+  btn.closest('.dict-result').querySelector('.dict-word-header').after(row);
+  document.getElementById('override-en').focus();
 }
 
 async function confirmAdd(fi) {
   const en = document.getElementById('override-en').value.trim();
+  const notes = document.getElementById('override-notes').value.trim();
   if (!en) { alert('Please enter an English meaning.'); return; }
-  const added = await addWordToList(fi, en);
+  const added = await addWordToList(fi, en, notes);
   const row = document.getElementById('add-override-row');
   if (row) row.remove();
   const btn = document.getElementById('add-word-btn');
