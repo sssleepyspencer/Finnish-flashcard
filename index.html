@@ -271,30 +271,17 @@
 
   .ai-stream { white-space: pre-wrap; }
 
-  /* add-to-list form */
+  /* add-to-list override input */
   .add-override {
-    margin-top: 16px; padding: 16px; background: var(--surface2);
-    border-radius: 12px; border: 1px solid var(--border);
+    display: flex; gap: 8px; margin-top: 8px; align-items: center;
   }
-  .add-override-grid {
-    display: grid; gap: 10px; margin-bottom: 12px;
-  }
-  .add-override-field label {
-    display: block; font-size: 11px; font-family: 'DM Mono', monospace;
-    letter-spacing: 1px; text-transform: uppercase; color: var(--ink3);
-    margin-bottom: 4px;
-  }
-  .add-override-field input,
-  .add-override-field textarea {
-    width: 100%; font-family: 'Fraunces', serif; font-size: 14px; font-weight: 300;
+  .add-override input {
+    flex: 1;
+    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 300;
     padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
     background: var(--bg); color: var(--ink); outline: none;
-    box-sizing: border-box;
   }
-  .add-override-field textarea { resize: vertical; min-height: 64px; }
-  .add-override-field input:focus,
-  .add-override-field textarea:focus { border-color: var(--accent); }
-  .add-override-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .add-override input:focus { border-color: var(--accent); }
 
   /* ── flashcard ── */
   .card-controls {
@@ -416,7 +403,42 @@
     margin-bottom: 14px; font-weight: 300;
   }
 
-
+  /* ── auth modal ── */
+  .auth-overlay {
+    position: fixed; inset: 0; background: rgba(26,22,18,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+  }
+  .auth-modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 36px 32px;
+    width: 100%; max-width: 380px;
+  }
+  .auth-title { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
+  .auth-sub { font-size: 13px; color: var(--ink3); font-style: italic; font-weight: 300; margin-bottom: 24px; }
+  .auth-field { margin-bottom: 14px; }
+  .auth-field label { font-size: 12px; color: var(--ink2); display: block; margin-bottom: 5px; font-family: 'DM Mono', monospace; }
+  .auth-field input {
+    width: 100%; font-family: 'Fraunces', serif; font-size: 15px; font-weight: 300;
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg); color: var(--ink); outline: none; transition: border-color 0.2s;
+  }
+  .auth-field input:focus { border-color: var(--accent); }
+  .auth-error { font-size: 13px; color: var(--accent2); margin-bottom: 12px; min-height: 18px; }
+  .auth-switch { font-size: 13px; color: var(--ink3); text-align: center; margin-top: 16px; font-weight: 300; }
+  .auth-switch button { background: none; border: none; color: var(--accent); cursor: pointer; font-family: 'Fraunces', serif; font-size: 13px; text-decoration: underline; }
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--ink2); font-weight: 300;
+  }
+  .user-pill strong { color: var(--accent); font-weight: 500; }
+  .user-pill button {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 10px; font-size: 12px; font-family: 'Fraunces', serif;
+    color: var(--ink3); cursor: pointer; transition: all 0.15s;
+  }
+  .user-pill button:hover { background: var(--surface2); color: var(--ink); }
+  .sync-status { font-size: 11px; color: var(--ink3); font-style: italic; font-family: 'DM Mono', monospace; }
 </style>
 </head>
 <body>
@@ -433,6 +455,7 @@
     <button class="nav-btn" onclick="showPanel('flashcard')">Flashcards</button>
     <button class="nav-btn" onclick="showPanel('dictation')">Dictation</button>
   </nav>
+  <div id="user-area"></div>
 </header>
 
 <main>
@@ -582,39 +605,37 @@
 
 </main>
 
+
+<!-- Auth Modal -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-modal">
+    <div class="auth-title" id="auth-title">Welcome back</div>
+    <div class="auth-sub" id="auth-sub">Log in to sync your word list across devices</div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input id="auth-username" type="text" placeholder="your username" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('auth-password').focus()" />
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')submitAuth()" />
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="btn btn-primary" onclick="submitAuth()" style="width:100%;justify-content:center;" id="auth-submit-btn">Log in</button>
+    <div class="auth-switch">
+      <span id="auth-switch-text">Don't have an account?</span>
+      <button onclick="toggleAuthMode()">Sign up</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════ */
 let words = [];
-
-/* ═══════════════════════════════════════════
-   WORDS API
-═══════════════════════════════════════════ */
-async function fetchWords() {
-  try {
-    const res = await fetch('/api/words');
-    words = await res.json();
-    renderWordList();
-  } catch(err) {
-    console.error('Failed to load words:', err);
-  }
-}
-
-async function apiAddWord(fi, en, notes = '') {
-  const res = await fetch('/api/words', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fi, en, notes })
-  });
-  if (!res.ok) throw new Error('Failed to add word');
-  return await res.json();
-}
-
-async function apiDeleteWord(id) {
-  await fetch(`/api/words?id=${id}`, { method: 'DELETE' });
-}
-
+let currentUser = null;
 let fcIndex = 0, fcMode = 'fi', fcShuffled = [], isFlipped = false;
 let dtQueue = [], dtIndex = 0, dtCorrect = 0, dtWrong = 0, dtAnswered = false, dtCurrentWord = null;
 
@@ -649,19 +670,13 @@ function parseWords(text) {
   }, []);
 }
 
-async function importWords() {
+function importWords() {
   const parsed = parseWords(document.getElementById('import-text').value);
   if (!parsed.length) { alert('No valid words detected. Please check the format.'); return; }
-  const existing = new Set(words.map(w => w.fi));
-  const toAdd = parsed.filter(w => !existing.has(w.fi));
-  for (const w of toAdd) {
-    try {
-      const word = await apiAddWord(w.fi, w.en);
-      words.unshift(word);
-    } catch(e) {}
-  }
+  words = [...words, ...parsed].filter((w,i,a) => a.findIndex(x=>x.fi===w.fi)===i);
   renderWordList();
   document.getElementById('import-text').value = '';
+  syncWordsToDB();
 }
 
 function loadSample() {
@@ -684,17 +699,12 @@ päivä / day`;
   importWords();
 }
 
-async function addWordToList(fi, en, notes = '') {
+function addWordToList(fi, en) {
   if (words.find(w => w.fi === fi)) return false;
-  try {
-    const word = await apiAddWord(fi, en, notes);
-    words.unshift(word);
-    renderWordList();
-    return true;
-  } catch(err) {
-    console.error('Failed to add word:', err);
-    return false;
-  }
+  words.push({ fi, en });
+  renderWordList();
+  addWordToDB(fi, en);
+  return true;
 }
 
 function renderWordList() {
@@ -708,26 +718,22 @@ function renderWordList() {
   body.innerHTML = words.map((w,i) => `
     <div class="word-item">
       <div class="word-fi">${esc(w.fi)}</div>
-      <div class="word-en">${esc(w.en)}${w.notes ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px;font-style:italic;">${esc(w.notes.slice(0,80))}${w.notes.length>80?'…':''}</div>` : ''}</div>
+      <div class="word-en">${esc(w.en)}</div>
       <div class="word-actions">
         <button class="icon-btn" onclick="speakWord('${esc(w.fi.replace(/'/g,"\\'"))}',null)" title="Play">🔊</button>
         <button class="icon-btn" onclick="lookupFromList('${esc(w.fi.replace(/'/g,"\\'"))}')" title="Look up">🔍</button>
-        <button class="icon-btn" onclick="deleteWord(${w.id})" title="Remove">✕</button>
+        <button class="icon-btn" onclick="deleteWord(${i})" title="Remove">✕</button>
       </div>
     </div>`).join('');
 }
 
-async function deleteWord(id) {
-  await apiDeleteWord(id);
-  words = words.filter(w => w.id !== id);
+function deleteWord(i) {
+  const fi = words[i].fi;
+  words.splice(i,1);
   renderWordList();
+  deleteWordFromDB(fi);
 }
-async function clearWords() {
-  if (!confirm('Clear all words?')) return;
-  await Promise.all(words.map(w => apiDeleteWord(w.id)));
-  words = [];
-  renderWordList();
-}
+function clearWords() { if(confirm('Clear all words?')){ words=[]; renderWordList(); syncWordsToDB(); } }
 function lookupFromList(fi) { showPanel('lookup'); document.getElementById('dict-input').value=fi; lookupWord(); }
 
 function esc(s) {
@@ -779,8 +785,6 @@ async function lookupWord() {
 
   // Fetch from Wiktionary (Finnish entries)
   const wiktData = await fetchWiktionary(query);
-  currentWiktData = wiktData;
-  currentAIText = '';
   const alreadyAdded = words.some(w => w.fi === query);
 
   // Build definitions HTML from Wiktionary
@@ -831,10 +835,10 @@ async function lookupWord() {
       <div class="ai-section">
         <div class="ai-label-row">
           <span class="ai-badge">AI</span>
-          <span class="ai-section-label">AI explanation</span>
+          <span class="ai-section-label">Gemini's explanation</span>
         </div>
         <div class="ai-content" id="ai-content">
-          <div class="ai-loading"><div class="ai-spinner"></div> Loading AI explanation…</div>
+          <div class="ai-loading"><div class="ai-spinner"></div> Asking Gemini…</div>
         </div>
       </div>
     </div>`;
@@ -844,82 +848,28 @@ async function lookupWord() {
 }
 
 let currentAddWord = { fi: '', en: '' };
-let currentAIText = '';
-let currentWiktData = null;
-
-function buildEnFromWikt(wiktData) {
-  if (!wiktData || !wiktData.length) return '';
-  const parts = [];
-  for (const entry of wiktData) {
-    const posAbbr = {
-      'noun': 'n.', 'verb': 'v.', 'adjective': 'adj.', 'adverb': 'adv.',
-      'pronoun': 'pron.', 'conjunction': 'conj.', 'preposition': 'prep.',
-      'interjection': 'interj.', 'numeral': 'num.'
-    };
-    const pos = entry.pos ? (posAbbr[entry.pos.toLowerCase()] || entry.pos.toLowerCase()) : '';
-    const defs = entry.defs.map(d => d.def).join('; ');
-    parts.push(pos ? `${pos} ${defs}` : defs);
-  }
-  return parts.join('; ');
-}
 
 function handleAddWord(fi) {
   const btn = document.getElementById('add-word-btn');
   if (btn.classList.contains('added')) return;
-  const existingForm = document.getElementById('add-override-row');
-  if (existingForm) { existingForm.remove(); return; }
-
-  const en = buildEnFromWikt(currentWiktData) || currentAddWord.en || '';
-
+  const existingOverride = document.getElementById('add-override-row');
+  if (existingOverride) existingOverride.remove();
+  const guessedEn = currentAddWord.en || '';
   const row = document.createElement('div');
   row.id = 'add-override-row';
   row.className = 'add-override';
   row.innerHTML = `
-    <div class="add-override-grid">
-      <div class="add-override-field">
-        <label>Finnish</label>
-        <input id="override-fi" type="text" value="${esc(fi)}" readonly style="opacity:0.6;cursor:default;" />
-      </div>
-      <div class="add-override-field">
-        <label>English</label>
-        <input id="override-en" type="text" value="${esc(en)}" placeholder="English meaning…" />
-      </div>
-      <div class="add-override-field">
-        <label style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Notes</span>
-          <button type="button" onclick="fillNotesFromAI()" style="font-size:11px;font-family:'DM Mono',monospace;background:none;border:1px solid var(--border);border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--ink3);letter-spacing:0.5px;" title="Fill with AI explanation">✦ Fill from AI</button>
-        </label>
-        <textarea id="override-notes" placeholder="Your notes, memory tips, AI summary…"></textarea>
-      </div>
-    </div>
-    <div class="add-override-actions">
-      <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="document.getElementById('add-override-row').remove()">Cancel</button>
-      <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="confirmAdd('${esc(fi.replace(/'/g,"\\'"))}')">Add to list</button>
-    </div>
+    <input id="override-en" type="text" placeholder="English meaning…" value="${esc(guessedEn)}" />
+    <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;" onclick="confirmAdd('${esc(fi.replace(/'/g,"\\'"))}')">Add</button>
   `;
   btn.closest('.dict-result').querySelector('.dict-word-header').after(row);
   document.getElementById('override-en').focus();
 }
 
-function fillNotesFromAI() {
-  const textarea = document.getElementById('override-notes');
-  if (!textarea) return;
-  if (!currentAIText) {
-    textarea.placeholder = 'AI explanation not loaded yet…';
-    return;
-  }
-  const cleaned = currentAIText
-    .replace(/^Card:.*$/im, '')
-    .replace(/[ \t]*[\n]{3,}/g, '\n\n')
-    .trim();
-  textarea.value = cleaned;
-  textarea.focus();
-}
-async function confirmAdd(fi) {
+function confirmAdd(fi) {
   const en = document.getElementById('override-en').value.trim();
-  const notes = document.getElementById('override-notes').value.trim();
   if (!en) { alert('Please enter an English meaning.'); return; }
-  const added = await addWordToList(fi, en, notes);
+  const added = addWordToList(fi, en);
   const row = document.getElementById('add-override-row');
   if (row) row.remove();
   const btn = document.getElementById('add-word-btn');
@@ -965,7 +915,7 @@ Keep it brief and practical. Plain text only, no markdown.`;
 
     if (!response.ok) {
       const errData = await response.json();
-      throw new Error(errData.error?.message || `HTTP ${response.status}`);
+      throw new Error(errData.error?.message || 'API error');
     }
 
     const data = await response.json();
@@ -974,7 +924,6 @@ Keep it brief and practical. Plain text only, no markdown.`;
 
     const cardMatch = fullText.match(/Card:\s*(.+)/i);
     if (cardMatch) currentAddWord.en = cardMatch[1].trim();
-    currentAIText = fullText;
 
     renderAIText(fullText, aiEl);
 
@@ -982,8 +931,6 @@ Keep it brief and practical. Plain text only, no markdown.`;
     aiEl.innerHTML = `<span style="color:var(--ink3);font-style:italic;">AI explanation unavailable. (${err.message})</span>`;
   }
 }
-
-
 
 
 function renderAIText(text, el) {
@@ -1171,6 +1118,125 @@ function showDictationResult(){
 }
 
 /* ═══════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════ */
+let authMode = 'login';
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  const isLogin = authMode === 'login';
+  document.getElementById('auth-title').textContent = isLogin ? 'Welcome back' : 'Create account';
+  document.getElementById('auth-sub').textContent = isLogin
+    ? 'Log in to sync your word list across devices'
+    : 'Pick a username and password to get started';
+  document.getElementById('auth-submit-btn').textContent = isLogin ? 'Log in' : 'Sign up';
+  document.getElementById('auth-switch-text').textContent = isLogin ? "Don't have an account?" : 'Already have an account?';
+  document.querySelector('.auth-switch button').textContent = isLogin ? 'Sign up' : 'Log in';
+  document.getElementById('auth-error').textContent = '';
+}
+
+async function submitAuth() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  const btn = document.getElementById('auth-submit-btn');
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: authMode, username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Error'; btn.disabled = false; btn.textContent = authMode === 'login' ? 'Log in' : 'Sign up'; return; }
+    currentUser = data.user;
+    localStorage.setItem('sanasto_user', JSON.stringify(currentUser));
+    document.getElementById('auth-overlay').style.display = 'none';
+    renderUserArea();
+    await loadWordsFromDB();
+  } catch(e) {
+    errEl.textContent = 'Network error, try again.';
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? 'Log in' : 'Sign up';
+  }
+}
+
+function renderUserArea() {
+  const el = document.getElementById('user-area');
+  if (!currentUser) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="user-pill">
+    <strong>${esc(currentUser.username)}</strong>
+    <span class="sync-status" id="sync-status">synced</span>
+    <button onclick="logout()">Log out</button>
+  </div>`;
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('sanasto_user');
+  words = [];
+  renderWordList();
+  renderUserArea();
+  document.getElementById('auth-overlay').style.display = 'flex';
+}
+
+async function loadWordsFromDB() {
+  if (!currentUser) return;
+  setSyncStatus('loading…');
+  try {
+    const res = await fetch('/api/words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'load', userId: currentUser.id })
+    });
+    const data = await res.json();
+    if (data.ok) { words = data.words; renderWordList(); setSyncStatus('synced'); }
+  } catch(e) { setSyncStatus('offline'); }
+}
+
+async function syncWordsToDB() {
+  if (!currentUser) return;
+  setSyncStatus('saving…');
+  try {
+    await fetch('/api/words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'save', userId: currentUser.id, words })
+    });
+    setSyncStatus('synced');
+  } catch(e) { setSyncStatus('offline'); }
+}
+
+async function addWordToDB(fi, en) {
+  if (!currentUser) return;
+  try {
+    await fetch('/api/words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'add', userId: currentUser.id, fi, en })
+    });
+  } catch(e) {}
+}
+
+async function deleteWordFromDB(fi) {
+  if (!currentUser) return;
+  try {
+    await fetch('/api/words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', userId: currentUser.id, fi })
+    });
+  } catch(e) {}
+}
+
+function setSyncStatus(msg) {
+  const el = document.getElementById('sync-status');
+  if (el) el.textContent = msg;
+}
+
+/* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
 if('speechSynthesis' in window){
@@ -1178,7 +1244,17 @@ if('speechSynthesis' in window){
   window.speechSynthesis.getVoices();
 }
 
-fetchWords();
+// Check for saved session
+const savedUser = localStorage.getItem('sanasto_user');
+if (savedUser) {
+  try {
+    currentUser = JSON.parse(savedUser);
+    document.getElementById('auth-overlay').style.display = 'none';
+    renderUserArea();
+    loadWordsFromDB();
+  } catch(e) { localStorage.removeItem('sanasto_user'); }
+}
+renderWordList();
 </script>
 </body>
 </html>
