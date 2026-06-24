@@ -1,75 +1,50 @@
 import { neon } from '@neondatabase/serverless';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-export default async function handler(req) {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const sql = neon(process.env.DATABASE_URL);
-  const { action, userId, words: wordList, fi, en } = await req.json();
+  const { action, userId, words, fi, en } = req.body;
 
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
+  if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
-  // Load all words for user
   if (action === 'load') {
     const rows = await sql`
-      SELECT fi, en FROM words
-      WHERE user_id = ${userId}
-      ORDER BY created_at ASC
+      SELECT fi, en FROM words WHERE user_id = ${userId} ORDER BY created_at ASC
     `;
-    return new Response(JSON.stringify({ ok: true, words: rows }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json({ ok: true, words: rows });
   }
 
-  // Save entire word list (sync)
   if (action === 'save') {
     await sql`DELETE FROM words WHERE user_id = ${userId}`;
-    if (wordList && wordList.length) {
-      for (const w of wordList) {
+    if (words && words.length) {
+      for (const w of words) {
         await sql`
-          INSERT INTO words (user_id, fi, en)
-          VALUES (${userId}, ${w.fi}, ${w.en})
+          INSERT INTO words (user_id, fi, en) VALUES (${userId}, ${w.fi}, ${w.en})
           ON CONFLICT (user_id, fi) DO UPDATE SET en = ${w.en}
         `;
       }
     }
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json({ ok: true });
   }
 
-  // Add single word
   if (action === 'add') {
     await sql`
-      INSERT INTO words (user_id, fi, en)
-      VALUES (${userId}, ${fi}, ${en})
+      INSERT INTO words (user_id, fi, en) VALUES (${userId}, ${fi}, ${en})
       ON CONFLICT (user_id, fi) DO UPDATE SET en = ${en}
     `;
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json({ ok: true });
   }
 
-  // Delete single word
   if (action === 'delete') {
     await sql`DELETE FROM words WHERE user_id = ${userId} AND fi = ${fi}`;
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json({ ok: true });
   }
 
-  return new Response(JSON.stringify({ error: 'Unknown action' }), {
-    status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-  });
+  return res.status(400).json({ error: 'Unknown action' });
 }

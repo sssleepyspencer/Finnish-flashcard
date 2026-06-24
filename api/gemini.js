@@ -1,69 +1,42 @@
-export const config = { runtime: 'edge' };
+const MODELS = [
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-8b',
+];
 
-export default async function handler(req) {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+
+  const body = req.body;
+  let lastError = '';
+
+  for (const model of MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const upstream = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await upstream.json();
+      const errCode = data?.error?.code;
+      if (errCode === 429 || errCode === 401 || errCode === 403) {
+        lastError = data.error.message;
+        continue;
+      }
+      return res.status(upstream.status).json(data);
+    } catch (err) {
+      lastError = err.message;
+    }
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
-
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-    });
-  }
-
-  try {
-    const body = await req.json();
-
-    // Convert Gemini format to Groq (OpenAI-compatible) format
-    const prompt = body.contents?.[0]?.parts?.[0]?.text || '';
-    const groqBody = {
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: body.generationConfig?.maxOutputTokens || 600,
-      temperature: body.generationConfig?.temperature || 0.4,
-    };
-
-    const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(groqBody),
-    });
-
-    const data = await upstream.json();
-
-    // Convert Groq response back to Gemini format so frontend works unchanged
-    const text = data.choices?.[0]?.message?.content || '';
-    const geminiFormat = {
-      candidates: [{ content: { parts: [{ text }] } }]
-    };
-
-    return new Response(JSON.stringify(geminiFormat), {
-      status: upstream.status,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-    });
-  }
+  return res.status(500).json({ error: lastError || 'All models failed' });
 }
