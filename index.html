@@ -439,6 +439,32 @@
   }
   .user-pill button:hover { background: var(--surface2); color: var(--ink); }
   .sync-status { font-size: 11px; color: var(--ink3); font-style: italic; font-family: 'DM Mono', monospace; }
+
+  /* ── word lists ── */
+  .lists-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .list-tab {
+    font-family: 'Fraunces', serif; font-size: 13px; font-weight: 300; font-style: italic;
+    padding: 6px 14px; border-radius: 50px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--ink2); cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .list-tab:hover { background: var(--surface2); }
+  .list-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .list-tab .list-count { font-size: 11px; opacity: 0.7; font-family: 'DM Mono', monospace; }
+  .new-list-btn {
+    font-family: 'Fraunces', serif; font-size: 13px; font-weight: 300;
+    padding: 6px 12px; border-radius: 50px;
+    border: 1px dashed var(--border); background: transparent;
+    color: var(--ink3); cursor: pointer; transition: all 0.15s;
+  }
+  .new-list-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .list-actions {
+    display: flex; gap: 6px; margin-left: auto;
+  }
 </style>
 </head>
 <body>
@@ -483,24 +509,33 @@
 
   <!-- ═══════════════ WORD LIST PANEL ═══════════════ -->
   <div id="panel-import" class="panel active">
+
+    <div class="lists-bar" id="lists-bar">
+      <button class="list-tab active" id="tab-Default" onclick="switchList('Default')">
+        Default <span class="list-count" id="count-Default"></span>
+      </button>
+      <button class="new-list-btn" onclick="createNewList()">+ New list</button>
+    </div>
+
     <div class="import-box">
-      <label>Import words (one per line, Finnish / English)</label>
+      <label>Import words into <strong id="import-list-label">Default</strong></label>
       <textarea id="import-text" placeholder="talo / house&#10;koira / dog&#10;auto / car&#10;kirja / book&#10;vesi / water"></textarea>
       <div class="format-hint">
         Format: Finnish / English (separated by /, Tab, or —)<br>
         You can also use "Finnish - English" or "Finnish  English"
       </div>
     </div>
-    <div style="display:flex; gap:10px; margin-bottom:24px;">
+    <div style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="importWords()">✦ Import words</button>
       <button class="btn btn-secondary" onclick="loadSample()">Load sample</button>
+      <button class="btn btn-danger" onclick="deleteCurrentList()" id="delete-list-btn" style="padding:10px 16px;font-size:13px;display:none;">Delete list</button>
     </div>
 
     <div id="word-list-section" style="display:none;">
       <div class="word-list">
         <div class="word-list-header">
           <span id="word-count-label">—</span>
-          <button class="btn btn-danger" onclick="clearWords()" style="padding:5px 12px;font-size:12px;">Clear all</button>
+          <button class="btn btn-danger" onclick="clearWords()" style="padding:5px 12px;font-size:12px;">Clear list</button>
         </div>
         <div id="word-list-body"></div>
       </div>
@@ -522,6 +557,12 @@
       <button class="btn btn-primary" onclick="showPanel('import')">Go import →</button>
     </div>
     <div id="fc-main" style="display:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <label style="font-size:13px;color:var(--ink3);font-style:italic;">Studying list:</label>
+        <select id="fc-list-select" onchange="fcChangeList()" style="font-family:'Fraunces',serif;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);outline:none;">
+          <option value="__all__">All lists</option>
+        </select>
+      </div>
       <div class="card-controls">
         <div class="progress-info" id="fc-progress">Card 1 of 0</div>
         <div style="display:flex;gap:8px;">
@@ -566,6 +607,12 @@
       <button class="btn btn-primary" onclick="showPanel('import')">Go import →</button>
     </div>
     <div id="dt-main" style="display:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <label style="font-size:13px;color:var(--ink3);font-style:italic;">Practicing list:</label>
+        <select id="dt-list-select" onchange="dtChangeList()" style="font-family:'Fraunces',serif;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);outline:none;">
+          <option value="__all__">All lists</option>
+        </select>
+      </div>
       <div class="stats-row">
         <div class="stat-card"><div class="stat-num" id="dt-total">0</div><div class="stat-label">Total</div></div>
         <div class="stat-card"><div class="stat-num" id="dt-done">0</div><div class="stat-label">Done</div></div>
@@ -636,6 +683,8 @@
 ═══════════════════════════════════════════ */
 let words = [];
 let currentUser = null;
+let currentList = "Default";
+let allLists = ["Default"];
 let fcIndex = 0, fcMode = 'fi', fcShuffled = [], isFlipped = false;
 let dtQueue = [], dtIndex = 0, dtCorrect = 0, dtWrong = 0, dtAnswered = false, dtCurrentWord = null;
 
@@ -677,6 +726,7 @@ function importWords() {
   renderWordList();
   document.getElementById('import-text').value = '';
   syncWordsToDB();
+  updateListCounts();
 }
 
 function loadSample() {
@@ -986,15 +1036,23 @@ function speakWord(text, callback) {
    FLASHCARD
 ═══════════════════════════════════════════ */
 function initFlashcard() {
-  const hasWords = words.length > 0;
+  populateListSelects();
+  fcWords = words;
+  initFlashcardWithWords(fcWords);
+}
+
+function initFlashcardWithWords(w) {
+  const hasWords = w.length > 0;
   document.getElementById('fc-empty').style.display = hasWords ? 'none' : 'block';
   document.getElementById('fc-main').style.display = hasWords ? 'block' : 'none';
   if (!hasWords) return;
-  fcShuffled = [...words]; fcIndex = 0; renderCard();
+  fcShuffled = [...w]; fcIndex = 0; isFlipped = false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  renderCard();
 }
 
-function shuffleCards() { fcShuffled=[...words].sort(()=>Math.random()-.5); fcIndex=0; isFlipped=false; document.getElementById('card-inner').classList.remove('flipped'); renderCard(); }
-function resetCards() { fcShuffled=[...words]; fcIndex=0; isFlipped=false; document.getElementById('card-inner').classList.remove('flipped'); renderCard(); }
+function shuffleCards() { fcShuffled=[...fcWords].sort(()=>Math.random()-.5); fcIndex=0; isFlipped=false; document.getElementById('card-inner').classList.remove('flipped'); renderCard(); }
+function resetCards() { fcShuffled=[...fcWords]; fcIndex=0; isFlipped=false; document.getElementById('card-inner').classList.remove('flipped'); renderCard(); }
 
 function setCardMode(mode) {
   fcMode=mode;
@@ -1034,14 +1092,24 @@ function speakFinnish() {
    DICTATION
 ═══════════════════════════════════════════ */
 function initDictation() {
-  const hasWords=words.length>0;
-  document.getElementById('dt-empty').style.display=hasWords?'none':'block';
-  document.getElementById('dt-main').style.display=hasWords?'block':'none';
-  if (hasWords) restartDictation();
+  populateListSelects();
+  dtWords = words;
+  initDictationWithWords(dtWords);
+}
+
+function initDictationWithWords(w) {
+  const hasWords = w.length > 0;
+  document.getElementById('dt-empty').style.display = hasWords ? 'none' : 'block';
+  document.getElementById('dt-main').style.display = hasWords ? 'block' : 'none';
+  if (hasWords) restartDictationWithWords(w);
 }
 
 function restartDictation() {
-  dtQueue=[...words].sort(()=>Math.random()-.5);
+  restartDictationWithWords(dtWords.length ? dtWords : words);
+}
+
+function restartDictationWithWords(w) {
+  dtQueue=[...w].sort(()=>Math.random()-.5);
   dtIndex=0; dtCorrect=0; dtWrong=0;
   document.getElementById('dt-input').style.display='';
   document.querySelector('.audio-cue').style.display='';
@@ -1128,7 +1196,7 @@ function showDictationResult(){
 
   // Show result
   document.querySelector('.dictation-actions').innerHTML =
-    `<button class="btn btn-primary" onclick="restartDictation()">Practice again</button>`;
+    `<button class="btn btn-primary" onclick="restartDictationWithWords(dtWords.length?dtWords:words)">Practice again</button>`;
 
   document.getElementById('dt-correct-msg').textContent = `Accuracy: ${pct}% (${dtCorrect}/${total})`;
   document.getElementById('dt-correct-msg').className = 'feedback-text correct-msg';
@@ -1203,14 +1271,86 @@ async function loadWordsFromDB() {
   if (!currentUser) return;
   setSyncStatus('loading…');
   try {
-    const res = await fetch('/api/words', {
+    // Load lists first
+    const listsRes = await fetch('/api/words', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'load', userId: currentUser.id })
+      body: JSON.stringify({ action: 'getLists', userId: currentUser.id })
     });
-    const data = await res.json();
-    if (data.ok) { words = data.words; renderWordList(); setSyncStatus('synced'); }
+    const listsData = await listsRes.json();
+    if (listsData.ok) {
+      allLists = listsData.lists.length ? listsData.lists : ['Default'];
+      renderListTabs();
+    }
+    // Load words for current list
+    await loadCurrentList();
+    setSyncStatus('synced');
   } catch(e) { setSyncStatus('offline'); }
+}
+
+async function loadCurrentList() {
+  if (!currentUser) return;
+  const res = await fetch('/api/words', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'load', userId: currentUser.id, listName: currentList })
+  });
+  const data = await res.json();
+  if (data.ok) { words = data.words; renderWordList(); }
+}
+
+function renderListTabs() {
+  const bar = document.getElementById('lists-bar');
+  if (!bar) return;
+  bar.innerHTML = allLists.map(name => `
+    <button class="list-tab ${name===currentList?'active':''}" id="tab-${esc(name)}" onclick="switchList('${esc(name.replace(/'/g,"\'"))}')">
+      ${esc(name)} <span class="list-count" id="count-${esc(name)}"></span>
+    </button>`).join('') +
+    '<button class="new-list-btn" onclick="createNewList()">+ New list</button>';
+  updateListCounts();
+  const deleteBtn = document.getElementById('delete-list-btn');
+  if (deleteBtn) deleteBtn.style.display = currentList === 'Default' ? 'none' : 'inline-flex';
+  const label = document.getElementById('import-list-label');
+  if (label) label.textContent = currentList;
+}
+
+async function switchList(name) {
+  currentList = name;
+  renderListTabs();
+  await loadCurrentList();
+}
+
+async function createNewList() {
+  const name = prompt('New list name:');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (allLists.includes(trimmed)) { alert('List already exists.'); return; }
+  allLists.push(trimmed);
+  currentList = trimmed;
+  words = [];
+  renderListTabs();
+  renderWordList();
+}
+
+async function deleteCurrentList() {
+  if (currentList === 'Default') return;
+  if (!confirm(`Delete list "${currentList}" and all its words?`)) return;
+  if (currentUser) {
+    await fetch('/api/words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'deleteList', userId: currentUser.id, listName: currentList })
+    });
+  }
+  allLists = allLists.filter(l => l !== currentList);
+  currentList = 'Default';
+  renderListTabs();
+  await loadCurrentList();
+}
+
+function updateListCounts() {
+  const el = document.getElementById('count-' + currentList);
+  if (el) el.textContent = words.length ? `(${words.length})` : '';
 }
 
 async function syncWordsToDB() {
@@ -1220,9 +1360,10 @@ async function syncWordsToDB() {
     await fetch('/api/words', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'save', userId: currentUser.id, words })
+      body: JSON.stringify({ action: 'save', userId: currentUser.id, words, listName: currentList })
     });
     setSyncStatus('synced');
+    updateListCounts();
   } catch(e) { setSyncStatus('offline'); }
 }
 
@@ -1232,8 +1373,9 @@ async function addWordToDB(fi, en) {
     await fetch('/api/words', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'add', userId: currentUser.id, fi, en })
+      body: JSON.stringify({ action: 'add', userId: currentUser.id, fi, en, listName: currentList })
     });
+    updateListCounts();
   } catch(e) {}
 }
 
@@ -1251,6 +1393,58 @@ async function deleteWordFromDB(fi) {
 function setSyncStatus(msg) {
   const el = document.getElementById('sync-status');
   if (el) el.textContent = msg;
+}
+
+/* ═══════════════════════════════════════════
+   LIST SELECTORS FOR FC & DICTATION
+═══════════════════════════════════════════ */
+let fcWords = []; // words for current flashcard session
+let dtWords = []; // words for current dictation session
+
+function populateListSelects() {
+  ['fc-list-select', 'dt-list-select'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const val = sel.value;
+    sel.innerHTML = '<option value="__all__">All lists</option>' +
+      allLists.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+    sel.value = val || '__all__';
+  });
+}
+
+async function getWordsForList(listSel) {
+  if (!currentUser) return words; // fallback
+  if (listSel === '__all__') {
+    const res = await fetch('/api/words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'loadAll', userId: currentUser.id })
+    });
+    const data = await res.json();
+    return data.ok ? data.words : words;
+  } else if (listSel === currentList) {
+    return words;
+  } else {
+    const res = await fetch('/api/words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'load', userId: currentUser.id, listName: listSel })
+    });
+    const data = await res.json();
+    return data.ok ? data.words : [];
+  }
+}
+
+async function fcChangeList() {
+  const sel = document.getElementById('fc-list-select').value;
+  fcWords = await getWordsForList(sel);
+  initFlashcardWithWords(fcWords);
+}
+
+async function dtChangeList() {
+  const sel = document.getElementById('dt-list-select').value;
+  dtWords = await getWordsForList(sel);
+  initDictationWithWords(dtWords);
 }
 
 /* ═══════════════════════════════════════════
