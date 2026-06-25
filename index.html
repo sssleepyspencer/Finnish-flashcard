@@ -1108,13 +1108,30 @@ function updateDtStats(){
 }
 
 function showDictationResult(){
+  const total = dtCorrect + dtWrong;
+  const pct = total > 0 ? Math.round(dtCorrect / total * 100) : 0;
+
   document.getElementById('dt-zh').textContent='All done!';
-  document.getElementById('dt-input').style.display='none';
-  document.querySelector('.audio-cue').style.display='none';
-  document.querySelector('.dictation-actions').innerHTML=`<button class="btn btn-primary" onclick="restartDictation()">Practice again</button>`;
-  const pct=Math.round(dtCorrect/(dtCorrect+dtWrong)*100)||0;
-  document.getElementById('dt-correct-msg').textContent=`Accuracy: ${pct}%`;
-  document.getElementById('dt-correct-msg').className='feedback-text correct-msg';
+
+  // Clear and hide input
+  const input = document.getElementById('dt-input');
+  input.value = '';
+  input.style.display = 'none';
+
+  // Hide audio button
+  document.querySelector('.audio-cue').style.display = 'none';
+
+  // Hide feedback
+  document.getElementById('dt-correct-msg').className = 'feedback-text';
+  document.getElementById('dt-wrong-msg').className = 'feedback-text';
+  document.getElementById('dt-correct-word').className = 'feedback-correct-word';
+
+  // Show result
+  document.querySelector('.dictation-actions').innerHTML =
+    `<button class="btn btn-primary" onclick="restartDictation()">Practice again</button>`;
+
+  document.getElementById('dt-correct-msg').textContent = `Accuracy: ${pct}% (${dtCorrect}/${total})`;
+  document.getElementById('dt-correct-msg').className = 'feedback-text correct-msg';
 }
 
 /* ═══════════════════════════════════════════
