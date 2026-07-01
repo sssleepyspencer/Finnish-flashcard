@@ -623,14 +623,7 @@
             <option value="__all__">All lists</option>
           </select>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <label style="font-size:13px;color:var(--ink3);font-style:italic;">Speed:</label>
-          <select id="dt-speed-select" style="font-family:'Fraunces',serif;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);outline:none;">
-            <option value="0.6">Slow</option>
-            <option value="0.9" selected>Normal</option>
-            <option value="1.2">Fast</option>
-          </select>
-        </div>
+
       </div>
       <div class="stats-row">
         <div class="stat-card"><div class="stat-num" id="dt-total">0</div><div class="stat-label">Total</div></div>
@@ -646,6 +639,14 @@
             <span id="dt-wave" class="wave-bars waveform"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
             <span id="dt-speak-label">🔊 Play audio</span>
           </button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
+          <label style="font-size:12px;color:var(--ink3);font-style:italic;">Speed:</label>
+          <select id="dt-speed-select" style="font-family:'Fraunces',serif;font-size:13px;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);outline:none;">
+            <option value="0.5">Slow</option>
+            <option value="0.9" selected>Normal</option>
+            <option value="1.2">Fast</option>
+          </select>
         </div>
         <div class="dictation-input-wrap">
           <input class="dictation-input" id="dt-input" type="text"
