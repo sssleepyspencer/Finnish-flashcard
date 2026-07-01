@@ -465,6 +465,15 @@
   .list-actions {
     display: flex; gap: 6px; margin-left: auto;
   }
+
+  /* ── inline edit ── */
+  .word-item.editing { background: var(--accent-light); }
+  .word-edit-input {
+    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 300;
+    padding: 4px 8px; border: 1px solid var(--accent);
+    border-radius: 6px; background: var(--surface);
+    color: var(--ink); outline: none; width: 100%;
+  }
 </style>
 </head>
 <body>
@@ -782,6 +791,51 @@ function deleteWord(i) {
   words.splice(i,1);
   renderWordList();
   deleteWordFromDB(fi);
+}
+
+function startEdit(i) {
+  const w = words[i];
+  const item = document.getElementById('word-item-' + i);
+  const fiEl = document.getElementById('word-fi-' + i);
+  const enEl = document.getElementById('word-en-' + i);
+  if (!item || !fiEl || !enEl) return;
+
+  item.classList.add('editing');
+  fiEl.innerHTML = `<input class="word-edit-input" id="edit-fi-${i}" value="${esc(w.fi)}" />`;
+  enEl.innerHTML = `<input class="word-edit-input" id="edit-en-${i}" value="${esc(w.en)}" />`;
+
+  // Replace edit button with save/cancel
+  const actions = item.querySelector('.word-actions');
+  actions.innerHTML = `
+    <button class="icon-btn" onclick="saveEdit(${i})" title="Save" style="color:var(--accent);">✓</button>
+    <button class="icon-btn" onclick="renderWordList()" title="Cancel">✕</button>
+  `;
+
+  document.getElementById('edit-fi-' + i)?.focus();
+
+  // Save on Enter
+  item.querySelectorAll('.word-edit-input').forEach(input => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveEdit(i);
+      if (e.key === 'Escape') renderWordList();
+    });
+  });
+}
+
+async function saveEdit(i) {
+  const oldFi = words[i].fi;
+  const newFi = document.getElementById('edit-fi-' + i)?.value.trim();
+  const newEn = document.getElementById('edit-en-' + i)?.value.trim();
+  if (!newFi || !newEn) return;
+
+  words[i] = { fi: newFi, en: newEn };
+  renderWordList();
+
+  // Update in DB: delete old, add new
+  if (currentUser) {
+    if (oldFi !== newFi) await deleteWordFromDB(oldFi);
+    await addWordToDB(newFi, newEn);
+  }
 }
 function clearWords() { if(confirm('Clear all words?')){ words=[]; renderWordList(); syncWordsToDB(); } }
 function lookupFromList(fi) { showPanel('lookup'); document.getElementById('dict-input').value=fi; lookupWord(); }
