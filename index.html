@@ -775,15 +775,52 @@ function renderWordList() {
   empty.style.display = 'none';
   document.getElementById('word-count-label').textContent = `${words.length} word${words.length===1?'':'s'}`;
   body.innerHTML = words.map((w,i) => `
-    <div class="word-item">
-      <div class="word-fi">${esc(w.fi)}</div>
-      <div class="word-en">${esc(w.en)}</div>
+    <div class="word-item" id="word-item-${i}">
+      <div class="word-fi" id="word-fi-${i}">${esc(w.fi)}</div>
+      <div class="word-en" id="word-en-${i}">${esc(w.en)}</div>
       <div class="word-actions">
-        <button class="icon-btn" onclick="speakWord('${esc(w.fi.replace(/'/g,"\\'"))}',null)" title="Play">🔊</button>
-        <button class="icon-btn" onclick="lookupFromList('${esc(w.fi.replace(/'/g,"\\'"))}')" title="Look up">🔍</button>
+        <button class="icon-btn" onclick="speakWord('${esc(w.fi.replace(/'/g,"\'"))}',null)" title="Play">🔊</button>
+        <button class="icon-btn" onclick="lookupFromList('${esc(w.fi.replace(/'/g,"\'"))}')" title="Look up">🔍</button>
+        <button class="icon-btn" onclick="startEdit(${i})" title="Edit">✎</button>
         <button class="icon-btn" onclick="deleteWord(${i})" title="Remove">✕</button>
       </div>
     </div>`).join('');
+}
+
+function startEdit(i) {
+  const w = words[i];
+  const item = document.getElementById('word-item-' + i);
+  const fiEl = document.getElementById('word-fi-' + i);
+  const enEl = document.getElementById('word-en-' + i);
+  if (!item || !fiEl || !enEl) return;
+  item.style.background = 'var(--accent-light)';
+  fiEl.innerHTML = '<input style="font-family:Fraunces,serif;font-size:14px;padding:3px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--accent);outline:none;width:100%;" id="edit-fi-' + i + '" value="' + esc(w.fi) + '" />';
+  enEl.innerHTML = '<input style="font-family:Fraunces,serif;font-size:14px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--ink);outline:none;width:100%;" id="edit-en-' + i + '" value="' + esc(w.en) + '" />';
+  const actions = item.querySelector('.word-actions');
+  actions.innerHTML = '<button class="icon-btn" onclick="saveEdit(' + i + ')" title="Save" style="color:var(--accent);font-size:18px;">✓</button><button class="icon-btn" onclick="renderWordList()" title="Cancel">✕</button>';
+  const fInput = document.getElementById('edit-fi-' + i);
+  if (fInput) fInput.focus();
+  item.querySelectorAll('input').forEach(function(inp) {
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') saveEdit(i);
+      if (e.key === 'Escape') renderWordList();
+    });
+  });
+}
+
+async function saveEdit(i) {
+  const oldFi = words[i].fi;
+  const fInput = document.getElementById('edit-fi-' + i);
+  const eInput = document.getElementById('edit-en-' + i);
+  const newFi = fInput ? fInput.value.trim() : '';
+  const newEn = eInput ? eInput.value.trim() : '';
+  if (!newFi || !newEn) return;
+  words[i] = { fi: newFi, en: newEn };
+  renderWordList();
+  if (currentUser) {
+    if (oldFi !== newFi) await deleteWordFromDB(oldFi);
+    await addWordToDB(newFi, newEn);
+  }
 }
 
 function deleteWord(i) {
@@ -793,50 +830,7 @@ function deleteWord(i) {
   deleteWordFromDB(fi);
 }
 
-function startEdit(i) {
-  const w = words[i];
-  const item = document.getElementById('word-item-' + i);
-  const fiEl = document.getElementById('word-fi-' + i);
-  const enEl = document.getElementById('word-en-' + i);
-  if (!item || !fiEl || !enEl) return;
 
-  item.classList.add('editing');
-  fiEl.innerHTML = `<input class="word-edit-input" id="edit-fi-${i}" value="${esc(w.fi)}" />`;
-  enEl.innerHTML = `<input class="word-edit-input" id="edit-en-${i}" value="${esc(w.en)}" />`;
-
-  // Replace edit button with save/cancel
-  const actions = item.querySelector('.word-actions');
-  actions.innerHTML = `
-    <button class="icon-btn" onclick="saveEdit(${i})" title="Save" style="color:var(--accent);">✓</button>
-    <button class="icon-btn" onclick="renderWordList()" title="Cancel">✕</button>
-  `;
-
-  document.getElementById('edit-fi-' + i)?.focus();
-
-  // Save on Enter
-  item.querySelectorAll('.word-edit-input').forEach(input => {
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') saveEdit(i);
-      if (e.key === 'Escape') renderWordList();
-    });
-  });
-}
-
-async function saveEdit(i) {
-  const oldFi = words[i].fi;
-  const newFi = document.getElementById('edit-fi-' + i)?.value.trim();
-  const newEn = document.getElementById('edit-en-' + i)?.value.trim();
-  if (!newFi || !newEn) return;
-
-  words[i] = { fi: newFi, en: newEn };
-  renderWordList();
-
-  // Update in DB: delete old, add new
-  if (currentUser) {
-    if (oldFi !== newFi) await deleteWordFromDB(oldFi);
-    await addWordToDB(newFi, newEn);
-  }
-}
 function clearWords() { if(confirm('Clear all words?')){ words=[]; renderWordList(); syncWordsToDB(); } }
 function lookupFromList(fi) { showPanel('lookup'); document.getElementById('dict-input').value=fi; lookupWord(); }
 
