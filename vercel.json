@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "api/auth.js": { "memory": 256 },
-    "api/words.js": { "memory": 256 },
-    "api/gemini.js": { "memory": 256 }
-  }
-}
+{}
