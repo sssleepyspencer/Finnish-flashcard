@@ -1068,15 +1068,36 @@ function speakLookup(word) {
 /* ═══════════════════════════════════════════
    TTS
 ═══════════════════════════════════════════ */
-function speakWord(text, callback) {
-  if (!('speechSynthesis' in window)) { alert('Speech synthesis not supported in this browser.'); return; }
+async function speakWord(text, callback) {
+  if (callback) callback(true);
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    if (!data.audioContent) throw new Error('No audio');
+
+    const audio = new Audio('data:audio/mp3;base64,' + data.audioContent);
+    audio.onended = () => { if (callback) callback(false); };
+    audio.onerror = () => { if (callback) callback(false); fallbackSpeak(text); };
+    await audio.play();
+  } catch(err) {
+    // Fallback to Web Speech API
+    fallbackSpeak(text, callback);
+  }
+}
+
+function fallbackSpeak(text, callback) {
+  if (!('speechSynthesis' in window)) { if (callback) callback(false); return; }
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = 'fi-FI'; utter.rate = 0.85; utter.pitch = 1;
   const voices = window.speechSynthesis.getVoices();
   const fiVoice = voices.find(v => v.lang.startsWith('fi'));
   if (fiVoice) utter.voice = fiVoice;
-  if (callback) { utter.onstart=()=>callback(true); utter.onend=()=>callback(false); utter.onerror=()=>callback(false); }
+  if (callback) { utter.onend=()=>callback(false); utter.onerror=()=>callback(false); }
   window.speechSynthesis.speak(utter);
 }
 
