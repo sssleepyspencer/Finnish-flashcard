@@ -178,7 +178,7 @@
     gap: 16px;
   }
 
-  .dict-word-title { font-size: 36px; font-weight: 500; color: var(--accent); letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+  .dict-word-title { font-size: 36px; font-weight: 500; color: var(--accent); letter-spacing: 0; line-height: 1; margin-bottom: 6px; }
   .dict-word-pos {
     display: inline-block;
     font-size: 11px; font-family: 'DM Mono', monospace;
@@ -473,7 +473,7 @@
   <div class="logo">
     <span class="flag">🇫🇮</span>
     <h1>Sanasto</h1>
-    <span>Finnish vocabulary notebook</span>
+    <span>one word at a time</span>
   </div>
   <nav>
     <button class="nav-btn" onclick="showPanel('lookup')">Dictionary</button>
@@ -503,7 +503,7 @@
 
     <div id="dict-empty" class="empty-state">
       <div class="icon">📚</div>
-      <p>Search a word to see its definition, pronunciation, and AI explanation</p>
+      <p>Curious about a word? Type it in and I'll tell you everything — meaning, sound, and how to actually use it.</p>
     </div>
   </div>
 
@@ -544,7 +544,7 @@
     <div id="empty-import">
       <div class="empty-state">
         <div class="icon">📖</div>
-        <p>No words yet — import some, load the sample, or look up words in the Dictionary tab</p>
+        <p>Your notebook is empty for now. Bring in a few words, try the sample list, or look one up in the Dictionary tab — every collection starts with one word.</p>
       </div>
     </div>
   </div>
@@ -553,8 +553,8 @@
   <div id="panel-flashcard" class="panel">
     <div id="fc-empty" class="empty-state">
       <div class="icon">🃏</div>
-      <p>Import words in the Word List tab first</p>
-      <button class="btn btn-primary" onclick="showPanel('import')">Go import →</button>
+      <p>Nothing to study yet — add some words and they'll turn into flashcards here.</p>
+      <button class="btn btn-primary" onclick="showPanel('import')">Add your first words →</button>
     </div>
     <div id="fc-main" style="display:none;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
@@ -583,7 +583,7 @@
               <span id="fc-wave" class="wave-bars waveform"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
               <span id="fc-speak-label">🔊 Play audio</span>
             </button>
-            <div class="card-hint">Click card to flip</div>
+            <div class="card-hint">Tap to reveal</div>
           </div>
           <div class="card-face back">
             <div class="card-label" id="fc-back-label">English</div>
@@ -603,8 +603,8 @@
   <div id="panel-dictation" class="panel">
     <div id="dt-empty" class="empty-state">
       <div class="icon">✍️</div>
-      <p>Import words in the Word List tab first</p>
-      <button class="btn btn-primary" onclick="showPanel('import')">Go import →</button>
+      <p>No words to test you on yet. Add a few, then come back and see what sticks.</p>
+      <button class="btn btn-primary" onclick="showPanel('import')">Add your first words →</button>
     </div>
     <div id="dt-main" style="display:none;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
@@ -620,7 +620,7 @@
         <div class="stat-card"><div class="stat-num" id="dt-wrong" style="color:var(--accent2)">0</div><div class="stat-label">Wrong</div></div>
       </div>
       <div class="dictation-card">
-        <div class="dictation-question">Listen and spell the Finnish word</div>
+        <div class="dictation-question">Listen closely, then write what you hear</div>
         <div class="dictation-zh" id="dt-zh">—</div>
         <div class="audio-cue">
           <button class="audio-btn" id="dt-audio-btn" onclick="speakDictation()">
@@ -657,7 +657,7 @@
 <div class="auth-overlay" id="auth-overlay">
   <div class="auth-modal">
     <div class="auth-title" id="auth-title">Welcome back</div>
-    <div class="auth-sub" id="auth-sub">Log in to sync your word list across devices</div>
+    <div class="auth-sub" id="auth-sub">Your word list, waiting right where you left it</div>
     <div class="auth-field">
       <label>Username</label>
       <input id="auth-username" type="text" placeholder="your username" autocomplete="username"
@@ -1179,7 +1179,7 @@ function showDictationResult(){
   const total = dtCorrect + dtWrong;
   const pct = total > 0 ? Math.round(dtCorrect / total * 100) : 0;
 
-  document.getElementById('dt-zh').textContent='All done!';
+  document.getElementById('dt-zh').textContent='That\'s everything!';
 
   // Clear and hide input
   const input = document.getElementById('dt-input');
@@ -1212,8 +1212,8 @@ function toggleAuthMode() {
   const isLogin = authMode === 'login';
   document.getElementById('auth-title').textContent = isLogin ? 'Welcome back' : 'Create account';
   document.getElementById('auth-sub').textContent = isLogin
-    ? 'Log in to sync your word list across devices'
-    : 'Pick a username and password to get started';
+    ? 'Your word list, waiting right where you left it'
+    : 'A few seconds, and your notebook is ready';
   document.getElementById('auth-submit-btn').textContent = isLogin ? 'Log in' : 'Sign up';
   document.getElementById('auth-switch-text').textContent = isLogin ? "Don't have an account?" : 'Already have an account?';
   document.querySelector('.auth-switch button').textContent = isLogin ? 'Sign up' : 'Log in';
