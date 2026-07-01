@@ -616,11 +616,21 @@
       <button class="btn btn-primary" onclick="showPanel('import')">Add your first words →</button>
     </div>
     <div id="dt-main" style="display:none;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-        <label style="font-size:13px;color:var(--ink3);font-style:italic;">Practicing list:</label>
-        <select id="dt-list-select" onchange="dtChangeList()" style="font-family:'Fraunces',serif;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);outline:none;">
-          <option value="__all__">All lists</option>
-        </select>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:13px;color:var(--ink3);font-style:italic;">Practicing list:</label>
+          <select id="dt-list-select" onchange="dtChangeList()" style="font-family:'Fraunces',serif;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);outline:none;">
+            <option value="__all__">All lists</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:13px;color:var(--ink3);font-style:italic;">Speed:</label>
+          <select id="dt-speed-select" style="font-family:'Fraunces',serif;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);outline:none;">
+            <option value="0.6">Slow</option>
+            <option value="0.9" selected>Normal</option>
+            <option value="1.2">Fast</option>
+          </select>
+        </div>
       </div>
       <div class="stats-row">
         <div class="stat-card"><div class="stat-num" id="dt-total">0</div><div class="stat-label">Total</div></div>
@@ -1068,13 +1078,14 @@ function speakLookup(word) {
 /* ═══════════════════════════════════════════
    TTS
 ═══════════════════════════════════════════ */
-async function speakWord(text, callback) {
+async function speakWord(text, callback, speed) {
   if (callback) callback(true);
+  const rate = speed || 0.9;
   try {
     const res = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, speed: rate })
     });
     const data = await res.json();
     if (!data.audioContent) throw new Error('No audio');
@@ -1205,11 +1216,12 @@ function loadDictation() {
 
 function speakDictation() {
   if(!dtCurrentWord) return;
+  const speed = parseFloat(document.getElementById('dt-speed-select')?.value || '0.9');
   const wave=document.getElementById('dt-wave'), label=document.getElementById('dt-speak-label');
   speakWord(dtCurrentWord.fi,(speaking)=>{
     wave.classList.toggle('active',speaking);
     label.textContent=speaking?'Playing…':'🔊 Play again';
-  });
+  }, speed);
 }
 
 function normalize(s){return s.trim().toLowerCase();}

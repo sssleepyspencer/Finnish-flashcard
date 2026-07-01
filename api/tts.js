@@ -21,9 +21,9 @@ export default async function handler(req, res) {
     } catch { return res.status(400).json({ error: 'Failed to parse body' }); }
   }
 
-  const { text } = body;
+  const { text, speed } = body;
   if (!text) return res.status(400).json({ error: 'No text provided' });
-
+  const speakingRate = Math.min(Math.max(parseFloat(speed) || 0.9, 0.25), 2.0);
   try {
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
           },
           audioConfig: {
             audioEncoding: 'MP3',
-            speakingRate: 0.9,
+            speakingRate: speakingRate,
             pitch: 0
           }
         })
