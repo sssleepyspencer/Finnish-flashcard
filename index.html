@@ -513,10 +513,10 @@
   </div>
   <nav>
     <button class="nav-btn" onclick="showPanel('lookup')">Dictionary</button>
-    <button class="nav-btn" onclick="showPanel('feedback')">Feedback</button>
     <button class="nav-btn active" onclick="showPanel('import')">Word List</button>
     <button class="nav-btn" onclick="showPanel('flashcard')">Flashcards</button>
     <button class="nav-btn" onclick="showPanel('dictation')">Dictation</button>
+    <button class="nav-btn" onclick="showPanel('feedback')">Feedback</button>
   </nav>
   <div id="user-area"></div>
 </header>
@@ -779,7 +779,7 @@ function showPanel(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
-  const labels = ['lookup','feedback','import','flashcard','dictation'];
+  const labels = ['lookup','import','flashcard','dictation','feedback'];
   document.querySelectorAll('.nav-btn')[labels.indexOf(name)].classList.add('active');
   if (name === 'flashcard') initFlashcard();
   if (name === 'dictation') initDictation();
